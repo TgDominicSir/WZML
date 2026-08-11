@@ -1,0 +1,62 @@
+{
+  "name": "Standalone Uphosters Upload Bot",
+  "description": "Telegram Bot dedicated to downloading files/media and uploading to GoFile, PixelDrain, BuzzHeavier, DevUploads, and VikingFile.",
+  "repository": "https://github.com/rjriajul/wzgram",
+  "keywords": ["telegram", "bot", "uploader", "gofile", "pixeldrain"],
+  "env": {
+    "BOT_TOKEN": {
+      "description": "Telegram Bot Token from @BotFather",
+      "required": true
+    },
+    "TELEGRAM_API": {
+      "description": "Telegram API ID from my.telegram.org",
+      "required": true
+    },
+    "TELEGRAM_HASH": {
+      "description": "Telegram API Hash from my.telegram.org",
+      "required": true
+    },
+    "OWNER_ID": {
+      "description": "Your Telegram User ID (Bot Owner)",
+      "required": true
+    },
+    "DATABASE_URL": {
+      "description": "Your MongoDB connection string (Mandatory)",
+      "required": true
+    },
+    "AUTHORIZED_CHATS": {
+      "description": "Space-separated authorized Chat IDs",
+      "required": false
+    },
+    "SUDO_USERS": {
+      "description": "Space-separated Sudo User IDs",
+      "required": false
+    },
+    "GOFILE_API": {
+      "description": "Gofile Account API Token",
+      "required": false
+    },
+    "PIXELDRAIN_KEY": {
+      "description": "PixelDrain API Key",
+      "required": false
+    },
+    "BUZZHEAVIER_API": {
+      "description": "BuzzHeavier Token",
+      "required": false
+    },
+    "DEVUPLOADS_KEY": {
+      "description": "DevUploads API Key",
+      "required": false
+    },
+    "VIKINGFILE_HASH": {
+      "description": "VikingFile User Hash",
+      "required": false
+    }
+  },
+  "formation": {
+    "worker": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  }
+}
