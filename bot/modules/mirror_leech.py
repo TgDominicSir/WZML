@@ -1,9 +1,6 @@
 from ast import literal_eval
 from base64 import b64encode
-from os import path as ospath
-from re import match as re_match
 
-from aiofiles import open as aiopen
 from aiofiles.os import path as aiopath
 from bot.core.config_manager import Config
 
@@ -11,42 +8,19 @@ from .. import DOWNLOAD_DIR, LOGGER, bot_loop, task_dict_lock
 from ..helper.ext_utils.bot_utils import (
     COMMAND_USAGE,
     arg_parser,
-    get_content_type,
     sync_to_async,
 )
-from ..helper.ext_utils.exceptions import DirectDownloadLinkException
 from ..helper.ext_utils.links_utils import (
-    is_gdrive_id,
-    is_gdrive_link,
-    is_mega_link,
-    is_magnet,
-    is_rclone_path,
     is_telegram_link,
     is_url,
 )
 from ..helper.ext_utils.task_manager import pre_task_check
 from ..helper.listeners.task_listener import TaskListener
-from ..helper.mirror_leech_utils.download_utils.alldebrid_resolver import (
-    alldebrid_resolve,
-    alldebrid_resolve_magnet,
-    alldebrid_resolve_torrent,
-)
-from ..helper.mirror_leech_utils.download_utils.aria2_download import (
-    add_aria2_download,
-)
 from ..helper.mirror_leech_utils.download_utils.direct_downloader import (
     add_direct_download,
 )
 from ..helper.mirror_leech_utils.download_utils.direct_link_generator import (
     direct_link_generator,
-)
-from ..helper.mirror_leech_utils.download_utils.gd_download import add_gd_download
-from ..helper.mirror_leech_utils.download_utils.jd_download import add_jd_download
-from ..helper.mirror_leech_utils.download_utils.mega_download import add_mega_download
-from ..helper.mirror_leech_utils.download_utils.nzb_downloader import add_nzb
-from ..helper.mirror_leech_utils.download_utils.qbit_download import add_qb_torrent
-from ..helper.mirror_leech_utils.download_utils.rclone_download import (
-    add_rclone_download,
 )
 from ..helper.mirror_leech_utils.download_utils.telegram_download import (
     TelegramDownloadHelper,
@@ -64,11 +38,8 @@ class Mirror(TaskListener):
         self,
         client,
         message,
-        is_qbit=False,
         is_leech=False,
-        is_jd=False,
-        is_nzb=False,
-        is_uphoster=False,
+        is_uphoster=True,
         same_dir=None,
         bulk=None,
         multi_tag=None,
@@ -86,24 +57,10 @@ class Mirror(TaskListener):
         self.same_dir = same_dir
         self.bulk = bulk
         super().__init__()
-        self.is_qbit = is_qbit
         self.is_leech = is_leech
-        self.is_jd = is_jd
-        self.is_nzb = is_nzb
         self.is_uphoster = is_uphoster
 
     async def new_event(self):
-        if self.is_leech:
-            if Config.DISABLE_LEECH:
-                await send_message(
-                    self.message, "The Leech command is currently disabled."
-                )
-                return
-        elif Config.DISABLE_MIRROR and not self.is_uphoster:
-            await send_message(
-                self.message, "The Mirror command is currently disabled."
-            )
-            return
         text = self.message.text.split("\n")
         input_list = text[0].split(" ")
 
@@ -118,8 +75,6 @@ class Mirror(TaskListener):
         args = {
             "-doc": False,
             "-med": False,
-            "-d": False,
-            "-j": False,
             "-s": False,
             "-b": False,
             "-e": False,
@@ -132,8 +87,6 @@ class Mirror(TaskListener):
             "-hl": False,
             "-bt": False,
             "-ut": False,
-            "-ad": False,
-            "-yt": False,
             "-i": 0,
             "-sp": 0,
             "link": "",
@@ -167,19 +120,11 @@ class Mirror(TaskListener):
             )
             return
 
-        if Config.DISABLE_SEED and args.get("-d", False):
-            await send_message(
-                self.message,
-                "Seeding is currently disabled. Please try without the -d flag.",
-            )
-            return
-
         if Config.DISABLE_FF_MODE and args.get("-ff"):
             await send_message(self.message, "FFmpeg commands are currently disabled.")
             return
 
         self.select = args["-s"]
-        self.seed = args["-d"]
         self.name = args["-n"]
         self.up_dest = args["-up"]
         self.category = args["-gc"]
@@ -187,7 +132,7 @@ class Mirror(TaskListener):
         self.link = args["link"]
         self.compress = args["-z"]
         self.extract = args["-e"]
-        self.join = args["-j"]
+        self.join = False
         self.thumb = args["-t"]
         self.split_size = args["-sp"]
         self.sample_video = args["-sv"]
@@ -205,8 +150,6 @@ class Mirror(TaskListener):
         self.folder_name = f"/{args['-m']}".rstrip("/") if len(args["-m"]) > 0 else ""
         self.bot_trans = args["-bt"]
         self.user_trans = args["-ut"]
-        self.is_alldebrid = args["-ad"]
-        self.is_yt = args["-yt"]
         self.metadata_dict = self.default_metadata_dict.copy()
         self.audio_metadata_dict = self.audio_metadata_dict.copy()
         self.video_metadata_dict = self.video_metadata_dict.copy()
@@ -222,8 +165,6 @@ class Mirror(TaskListener):
 
         bulk_start = 0
         bulk_end = 0
-        ratio = None
-        seed_time = None
         reply_to = None
         file_ = None
         session = ""
@@ -245,13 +186,6 @@ class Mirror(TaskListener):
         except Exception as e:
             self.ffmpeg_cmds = None
             LOGGER.error(e)
-
-        if not isinstance(self.seed, bool):
-            dargs = self.seed.split(":")
-            ratio = dargs[0] or None
-            if len(dargs) == 2:
-                seed_time = dargs[1] or None
-            self.seed = True
 
         if not isinstance(is_bulk, bool):
             dargs = is_bulk.split(":")
@@ -329,10 +263,7 @@ class Mirror(TaskListener):
             await Mirror(
                 self.client,
                 nextmsg,
-                self.is_qbit,
                 self.is_leech,
-                self.is_jd,
-                self.is_nzb,
                 self.is_uphoster,
                 self.same_dir,
                 self.bulk,
@@ -360,12 +291,6 @@ class Mirror(TaskListener):
                     self.link = reply_text.split("\n", 1)[0].strip()
                 else:
                     reply_to = None
-            elif reply_to.document and (
-                file_.mime_type == "application/x-bittorrent"
-                or file_.file_name.endswith((".torrent", ".dlc", ".nzb"))
-            ):
-                self.link = await reply_to.download()
-                file_ = None
 
         if (
             not self.link
@@ -374,15 +299,10 @@ class Mirror(TaskListener):
             and reply_to is None
             or file_ is None
             and not is_url(self.link)
-            and not is_magnet(self.link)
             and not await aiopath.exists(self.link)
-            and not is_rclone_path(self.link)
-            and not is_gdrive_id(self.link)
-            and not is_gdrive_link(self.link)
-            and not is_mega_link(self.link)
         ):
             await send_message(
-                self.message, COMMAND_USAGE["mirror"][0], COMMAND_USAGE["mirror"][1]
+                self.message, COMMAND_USAGE["uphoster"][0], COMMAND_USAGE["uphoster"][1]
             )
             await self.remove_from_same_dir()
             await delete_links(self.message)
@@ -401,207 +321,26 @@ class Mirror(TaskListener):
 
         self._set_mode_engine()
 
-        if self.is_alldebrid and (
-            is_magnet(self.link) or self.link.endswith(".torrent")
-        ):
+        if isinstance(self.link, str) and file_ is None:
             try:
-                if is_magnet(self.link):
-                    LOGGER.info("AllDebrid magnet route")
-                    resolved = await alldebrid_resolve_magnet(
-                        self.link,
-                        is_cancelled=lambda: self.is_cancelled,
-                    )
-                else:
-                    LOGGER.info(f"AllDebrid torrent file route: {self.link}")
-                    async with aiopen(self.link, "rb") as fh:
-                        torrent_bytes = await fh.read()
-                    resolved = await alldebrid_resolve_torrent(
-                        torrent_bytes,
-                        ospath.basename(self.link),
-                        is_cancelled=lambda: self.is_cancelled,
-                    )
-            except DirectDownloadLinkException as e:
-                e = str(e)
-                LOGGER.info(e)
-                if e.startswith("ERROR:"):
-                    await send_message(self.message, e)
-                    await self.remove_from_same_dir()
-                    await delete_links(self.message)
-                    return
-                resolved = None
+                self.link = await sync_to_async(direct_link_generator, self.link)
+                if isinstance(self.link, tuple):
+                    self.link, headers = self.link
+                elif isinstance(self.link, str):
+                    LOGGER.info(f"Generated link: {self.link}")
             except Exception as e:
-                await send_message(self.message, e)
-                await self.remove_from_same_dir()
-                await delete_links(self.message)
-                return
-            if isinstance(resolved, dict):
-                self._alldebrid_magnet_id = resolved.get("magnet_id", 0)
-                self.link = resolved
-                self.is_jd = False
-                self.is_qbit = False
-
-        if (
-            isinstance(self.link, str)
-            and not self.is_jd
-            and not self.is_nzb
-            and not self.is_qbit
-            and not is_magnet(self.link)
-            and not is_rclone_path(self.link)
-            and not is_gdrive_link(self.link)
-            and not self.link.endswith(".torrent")
-            and file_ is None
-            and not is_gdrive_id(self.link)
-            and not is_mega_link(self.link)
-        ):
-            if self.is_alldebrid:
-                try:
-                    self.link = await alldebrid_resolve(self.link)
-                    if isinstance(self.link, str):
-                        LOGGER.info(f"AllDebrid link: {self.link}")
-                except DirectDownloadLinkException as e:
-                    e = str(e)
-                    LOGGER.info(e)
-                    if e.startswith("ERROR:"):
-                        await send_message(self.message, e)
-                        await self.remove_from_same_dir()
-                        await delete_links(self.message)
-                        return
-                except Exception as e:
-                    await send_message(self.message, e)
-                    await self.remove_from_same_dir()
-                    await delete_links(self.message)
-                    return
-
-            if isinstance(self.link, str) and (
-                (content_type := await get_content_type(self.link)) is None
-                or re_match(r"text/html|text/plain", content_type)
-            ):
-                try:
-                    self.link = await sync_to_async(direct_link_generator, self.link)
-                    if isinstance(self.link, tuple):
-                        self.link, headers = self.link
-                    elif isinstance(self.link, str):
-                        LOGGER.info(f"Generated link: {self.link}")
-                except DirectDownloadLinkException as e:
-                    e = str(e)
-                    if "This link requires a password!" not in e:
-                        LOGGER.info(e)
-                    if e.startswith("ERROR:"):
-                        await send_message(self.message, e)
-                        await self.remove_from_same_dir()
-                        await delete_links(self.message)
-                        return
-                except Exception as e:
-                    await send_message(self.message, e)
-                    await self.remove_from_same_dir()
-                    await delete_links(self.message)
-                    return
+                LOGGER.info(f"Direct link gen error: {e}")
 
         if file_ is not None:
             await TelegramDownloadHelper(self).add_download(
                 reply_to, f"{path}/", session
             )
-        elif isinstance(self.link, dict):
-            await add_direct_download(self, path)
-        elif self.is_jd:
-            await add_jd_download(self, path)
-        elif self.is_qbit:
-            await add_qb_torrent(self, path, ratio, seed_time)
-        elif self.is_nzb:
-            await add_nzb(self, path)
-        elif is_rclone_path(self.link):
-            await add_rclone_download(self, f"{path}/")
-        elif is_gdrive_link(self.link) or is_gdrive_id(self.link):
-            await add_gd_download(self, path)
-        elif is_mega_link(self.link):
-            await add_mega_download(self, f"{path}/")
-        else:
-            ussr = args["-au"]
-            pssw = args["-ap"]
-            if ussr or pssw:
+        elif isinstance(self.link, (dict, str)):
+            if ussr := args["-au"]:
+                pssw = args["-ap"]
                 auth = f"{ussr}:{pssw}"
-                headers += (
-                    f" authorization: Basic {b64encode(auth.encode()).decode('ascii')}"
-                )
-            await add_aria2_download(self, path, headers, ratio, seed_time)
-
-
-async def mirror(client, message):
-    bot_loop.create_task(Mirror(client, message).new_event())
-
-
-async def qb_mirror(client, message):
-    bot_loop.create_task(Mirror(client, message, is_qbit=True).new_event())
-
-
-async def jd_mirror(client, message):
-    if Config.DISABLE_JD:
-        await message.reply("JDownloader is currently disabled by the Bot Owner.")
-        return
-    bot_loop.create_task(Mirror(client, message, is_jd=True).new_event())
-
-
-async def nzb_mirror(client, message):
-    if Config.DISABLE_NZB:
-        await message.reply("SABnzbd is currently disabled by the Bot Owner.")
-        return
-    text_parts = message.text.split()
-    nzb_id = None
-    if len(text_parts) > 1 and not text_parts[1].startswith(("http", "ftp", "/")):
-        potential_id = text_parts[1]
-        clean = potential_id.lstrip("-").replace("_", "")
-        if clean.isalnum() and not (potential_id.startswith("-") and clean.isalpha()):
-            nzb_id = potential_id
-            nzb_url = f"{Config.HYDRA_IP.rstrip('/')}/getnzb/api/{nzb_id}?apikey={Config.HYDRA_API_KEY}"
-            extra = " ".join(text_parts[2:])
-            message.text = f"/nzbmirror {nzb_url} -e {extra}".strip()
-    else:
-        if "-e" not in message.text:
-            message.text += " -e"
-    mirror_task = Mirror(client, message, is_nzb=True)
-    if nzb_id:
-        mirror_task.nzb_id = nzb_id
-    bot_loop.create_task(mirror_task.new_event())
-
-
-async def leech(client, message):
-    bot_loop.create_task(Mirror(client, message, is_leech=True).new_event())
-
-
-async def qb_leech(client, message):
-    bot_loop.create_task(
-        Mirror(client, message, is_qbit=True, is_leech=True).new_event()
-    )
-
-
-async def jd_leech(client, message):
-    if Config.DISABLE_JD:
-        await message.reply("JDownloader is currently disabled by the Bot Owner.")
-        return
-    bot_loop.create_task(Mirror(client, message, is_leech=True, is_jd=True).new_event())
-
-
-async def nzb_leech(client, message):
-    if Config.DISABLE_NZB:
-        await message.reply("SABnzbd is currently disabled by the Bot Owner.")
-        return
-    text_parts = message.text.split()
-    nzb_id = None
-    if len(text_parts) > 1 and not text_parts[1].startswith(("http", "ftp", "/")):
-        potential_id = text_parts[1]
-        clean = potential_id.lstrip("-").replace("_", "")
-        if clean.isalnum() and not (potential_id.startswith("-") and clean.isalpha()):
-            nzb_id = potential_id
-            nzb_url = f"{Config.HYDRA_IP.rstrip('/')}/getnzb/api/{nzb_id}?apikey={Config.HYDRA_API_KEY}"
-            extra = " ".join(text_parts[2:])
-            message.text = f"/nzbleech {nzb_url} -e {extra}".strip()
-    else:
-        if "-e" not in message.text:
-            message.text += " -e"
-    mirror_task = Mirror(client, message, is_leech=True, is_nzb=True)
-    if nzb_id:
-        mirror_task.nzb_id = nzb_id
-    bot_loop.create_task(mirror_task.new_event())
+                headers = (headers or "") + f" authorization: Basic {b64encode(auth.encode()).decode('ascii')}"
+            await add_direct_download(self, path)
 
 
 async def uphoster(client, message):

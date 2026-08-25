@@ -4,10 +4,8 @@ from time import time
 from mimetypes import guess_type
 from contextlib import suppress
 from os import path as ospath
-from pyrogram.enums import ButtonStyle
 
 from aiofiles.os import listdir, remove, path as aiopath
-from niquests import utils as rutils
 
 from ... import (
     intervals,
@@ -26,8 +24,6 @@ from ...modules.metadata import apply_metadata_title
 from ..common import TaskConfig
 from ...core.tg_client import TgClient
 from ...core.config_manager import Config
-from ...core.torrent_manager import TorrentManager
-from ..ext_utils.bot_utils import sync_to_async
 from ..ext_utils.links_utils import encode_slink
 from ..ext_utils.db_handler import database
 from ..ext_utils.files_utils import (
@@ -39,23 +35,13 @@ from ..ext_utils.files_utils import (
     remove_excluded_files,
     move_and_merge,
 )
-from ..ext_utils.links_utils import is_gdrive_id
 from ..ext_utils.status_utils import get_readable_file_size, get_readable_time
 from ..ext_utils.task_manager import check_running_tasks, start_from_queued
 from ..mirror_leech_utils.uphoster_utils.multi_upload import MultiUphosterUpload
-from ..mirror_leech_utils.gdrive_utils.upload import GoogleDriveUpload
-from ..mirror_leech_utils.rclone_utils.transfer import RcloneTransferHelper
-from ..mirror_leech_utils.upload_utils.mega_upload import add_mega_upload
 from ..mirror_leech_utils.status_utils.uphoster_status import UphosterStatus
-from ..mirror_leech_utils.status_utils.gdrive_status import (
-    GoogleDriveStatus,
-)
 from ..mirror_leech_utils.status_utils.queue_status import QueueStatus
-from ..mirror_leech_utils.status_utils.rclone_status import RcloneStatus
 from ..mirror_leech_utils.status_utils.telegram_status import TelegramStatus
-from ..mirror_leech_utils.status_utils.yt_status import YtStatus
 from ..mirror_leech_utils.upload_utils.telegram_uploader import TelegramUploader
-from ..mirror_leech_utils.youtube_utils.youtube_upload import YouTubeUpload
 from ..telegram_helper.button_build import ButtonMaker
 from ..telegram_helper.message_utils import (
     delete_links,
@@ -76,7 +62,7 @@ class TaskListener(TaskConfig):
                 for intvl in list(st.values()):
                     intvl.cancel()
             intervals["status"].clear()
-            await gather(TorrentManager.aria2.purgeDownloadResult(), delete_status())
+            await gather(delete_status())
 
     def clear(self):
         self.subname = ""
@@ -96,7 +82,7 @@ class TaskListener(TaskConfig):
                 self.same_dir[self.folder_name]["total"] -= 1
 
     async def on_download_start(self):
-        mode_name = "Leech" if self.is_leech else "Mirror"
+        mode_name = "Leech" if self.is_leech else "UpHoster"
         if self.bot_pm and self.is_super_chat:
             self.pm_msg = await send_message(
                 self.user_id,
@@ -180,17 +166,13 @@ class TaskListener(TaskConfig):
             gid = download.gid()
         LOGGER.info(f"Download completed: {self.name}")
 
-        if not (self.is_torrent or self.is_qbit):
-            self.seed = False
+        self.seed = False
 
         if multi_links:
-            self.seed = False
             await self.on_upload_error(
                 f"{self.name} Downloaded!\n\nWaiting for other tasks to finish..."
             )
             return
-        elif self.same_dir:
-            self.seed = False
 
         if self.folder_name:
             self.name = self.folder_name.strip("/").split("/", 1)[0]
@@ -209,14 +191,8 @@ class TaskListener(TaskConfig):
         self.size = await get_path_size(dl_path)
         self.is_file = await aiopath.isfile(dl_path)
 
-        if self.seed:
-            up_dir = self.up_dir = f"{self.dir}10000"
-            up_path = f"{self.up_dir}/{self.name}"
-            await create_recursive_symlink(self.dir, self.up_dir)
-            LOGGER.info(f"Shortcut created: {dl_path} -> {up_path}")
-        else:
-            up_dir = self.dir
-            up_path = dl_path
+        up_dir = self.dir
+        up_path = dl_path
 
         await remove_excluded_files(self.up_dir or self.dir, self.excluded_extensions)
 
@@ -229,7 +205,7 @@ class TaskListener(TaskConfig):
         if self.join and not self.is_file:
             await join_files(up_path)
 
-        if self.extract and not self.is_nzb:
+        if self.extract:
             up_path = await self.proceed_extract(up_path, gid)
             if self.is_cancelled:
                 return
@@ -348,17 +324,7 @@ class TaskListener(TaskConfig):
 
         self.size = await get_path_size(up_dir)
 
-        if self.is_yt:
-            LOGGER.info(f"Up to yt Name: {self.name}")
-            yt = YouTubeUpload(self, up_path)
-            async with task_dict_lock:
-                task_dict[self.mid] = YtStatus(self, yt, gid, "up")
-            await gather(
-                update_status_message(self.message.chat.id),
-                sync_to_async(yt.upload),
-            )
-            del yt
-        elif self.is_leech:
+        if self.is_leech:
             LOGGER.info(f"Leech Name: {self.name}")
             tg = TelegramUploader(self, up_dir)
             async with task_dict_lock:
@@ -388,31 +354,6 @@ class TaskListener(TaskConfig):
                 ddl.upload(),
             )
             del ddl
-        elif is_gdrive_id(self.up_dest):
-            LOGGER.info(f"Gdrive Upload Name: {self.name}")
-            drive = GoogleDriveUpload(self, up_path)
-            async with task_dict_lock:
-                task_dict[self.mid] = GoogleDriveStatus(self, drive, gid, "up")
-            await gather(
-                update_status_message(self.message.chat.id),
-                sync_to_async(drive.upload),
-            )
-            del drive
-        elif self.up_dest == "mega:":
-            LOGGER.info(f"Mega Upload Name: {self.name}")
-            mega_email = self.user_dict.get("MEGA_EMAIL") or ""
-            mega_password = self.user_dict.get("MEGA_PASSWORD") or ""
-            await add_mega_upload(self, up_path, mega_email, mega_password, gid)
-        else:
-            LOGGER.info(f"Rclone Upload Name: {self.name}")
-            RCTransfer = RcloneTransferHelper(self)
-            async with task_dict_lock:
-                task_dict[self.mid] = RcloneStatus(self, RCTransfer, gid, "up")
-            await gather(
-                update_status_message(self.message.chat.id),
-                RCTransfer.upload(up_path),
-            )
-            del RCTransfer
         return
 
     async def on_upload_complete(
@@ -432,34 +373,8 @@ class TaskListener(TaskConfig):
             f"\n┠ <b>Out Mode</b> → {self.mode[1]}"
         )
         LOGGER.info(f"Task Done: {self.name}")
-        if self.is_yt:
-            buttons = ButtonMaker()
-            if mime_type == "Folder/Playlist":
-                msg += "\n┠ <b>Type</b> → Playlist"
-                msg += f"\n┖ <b>Total Videos</b> → {files}"
-                if link:
-                    buttons.url_button(
-                        "🔗 View Playlist", link, style=ButtonStyle.PRIMARY
-                    )
-                user_message = f"{self.tag}\nYour playlist ({files} videos) has been uploaded to YouTube successfully!"
-            else:
-                msg += "\n┖ <b>Type</b> → Video"
-                if link:
-                    buttons.url_button("🔗 View Video", link, style=ButtonStyle.PRIMARY)
-                user_message = (
-                    f"{self.tag}\nYour video has been uploaded to YouTube successfully!"
-                )
 
-            msg += f"\n\n<b>Task By: </b>{self.tag}"
-
-            button = buttons.build_menu(1) if link else None
-
-            await send_message(self.user_id, msg, button)
-            if Config.LEECH_DUMP_CHAT:
-                await send_message(Config.LEECH_DUMP_CHAT, msg, button)
-            await send_message(self.message, user_message, button)
-
-        elif self.is_leech:
+        if self.is_leech:
             msg += f"\n┠ <b>Total Files: </b>{folders}"
             if mime_type != 0:
                 msg += f"\n┠ <b>Corrupted Files</b> → {mime_type}"
@@ -505,7 +420,7 @@ class TaskListener(TaskConfig):
 
             multi_link_msg = ""
             multi_links = []
-            if isinstance(link, dict) and not self.is_yt:
+            if isinstance(link, dict):
                 for service, result in link.items():
                     if "error" in result:
                         multi_link_msg += (
@@ -518,56 +433,14 @@ class TaskListener(TaskConfig):
                 multi_link_msg = multi_link_msg.strip()
                 link = None
 
-            if (
-                link
-                or rclone_path
-                and Config.RCLONE_SERVE_URL
-                and not self.private_link
-                or multi_links
-            ):
+            if multi_links:
                 buttons = ButtonMaker()
-                if link and Config.SHOW_CLOUD_LINK:
-                    if "mega.nz" in link:
-                        btn_label = "🔗 Mega Link"
-                    else:
-                        btn_label = "☁️ Cloud Link"
-                    buttons.url_button(btn_label, link, style=ButtonStyle.PRIMARY)
-                elif multi_links:
-                    for name, url in multi_links:
-                        buttons.url_button(name, url)
-                else:
-                    msg += f"\n\nPath: <code>{rclone_path}</code>"
-                if rclone_path and Config.RCLONE_SERVE_URL and not self.private_link:
-                    remote, rpath = rclone_path.split(":", 1)
-                    url_path = rutils.quote(f"{rpath}")
-                    share_url = f"{Config.RCLONE_SERVE_URL}/{remote}/{url_path}"
-                    if mime_type == "Folder":
-                        share_url += "/"
-                    buttons.url_button(
-                        "🔗 Rclone Link", share_url, style=ButtonStyle.PRIMARY
-                    )
-                if not rclone_path and dir_id:
-                    INDEX_URL = self.user_dict.get("INDEX_URL", "") or ""
-                    if not INDEX_URL:
-                        INDEX_URL = Config.INDEX_URL or ""
-                    if INDEX_URL and self.name:
-                        safe_name = rutils.quote(self.name.strip("/"))
-                        share_url = f"{INDEX_URL}/{safe_name}"
-                        if mime_type == "Folder":
-                            share_url += "/"
-                        buttons.url_button(
-                            "⚡ Index Link", share_url, style=ButtonStyle.PRIMARY
-                        )
-                        if mime_type.startswith(("image", "video", "audio")):
-                            share_urls = f"{share_url}?a=view"
-                            buttons.url_button(
-                                "🌐 View Link", share_urls, style=ButtonStyle.PRIMARY
-                            )
+                for name, url in multi_links:
+                    buttons.url_button(name, url)
                 button = buttons.build_menu(2)
             else:
-                if not multi_link_msg and rclone_path:
-                    msg += f"\n┃\n┠ Path: <code>{rclone_path}</code>"
                 button = None
+
             msg += f"\n┃\n┖ <b>Task By</b> → {self.tag}\n\n"
             group_msg = (
                 msg + "〶 <b><u>Action Performed :</u></b>\n"
@@ -581,17 +454,7 @@ class TaskListener(TaskConfig):
             if self.bot_pm and self.is_super_chat:
                 await send_message(self.user_id, msg, button)
 
-            if hasattr(Config, "MIRROR_LOG_ID") and Config.MIRROR_LOG_ID:
-                await send_message(Config.MIRROR_LOG_ID, msg, button)
-
             await send_message(self.message, group_msg, button)
-        if self.seed:
-            await clean_target(self.up_dir)
-            async with queue_dict_lock:
-                if self.mid in non_queued_up:
-                    non_queued_up.remove(self.mid)
-            await start_from_queued()
-            return
 
         if self.pm_msg and not Config.DELETE_LINKS:
             await delete_message(self.pm_msg)
@@ -620,15 +483,8 @@ class TaskListener(TaskConfig):
                 del task_dict[self.mid]
             count = len(task_dict)
         await self.remove_from_same_dir()
-        if magnet_id := getattr(self, "_alldebrid_magnet_id", 0) or 0:
-            from ..mirror_leech_utils.download_utils.alldebrid_resolver import (
-                delete_magnet,
-            )
-
-            await delete_magnet(magnet_id)
-            self._alldebrid_magnet_id = 0
         msg = (
-            f"""〶 <b><i><u>Limit Breached:</u></i></b>
+            f"""基 <b><i><u>Limit Breached:</u></i></b>
 │
 ┟ <b>Task Size</b> → {get_readable_file_size(self.size)}
 ┠ <b>In Mode</b> → {self.mode[0]}

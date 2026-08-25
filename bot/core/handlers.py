@@ -102,13 +102,6 @@ async def add_handlers():
     )
     TgClient.bot.add_handler(
         MessageHandler(
-            clone_node,
-            filters=command(BotCommands.CloneCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             aioexecute,
             filters=command(BotCommands.AExecCommand, case_sensitive=True)
             & CustomFilters.sudo,
@@ -145,87 +138,7 @@ async def add_handlers():
             & CustomFilters.authorized,
         )
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            count_node,
-            filters=command(BotCommands.CountCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            delete_file,
-            filters=command(BotCommands.DeleteCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            gdrive_search,
-            filters=command(BotCommands.ListCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(select_type, filters=regex("^list_types"))
-    )
     TgClient.bot.add_handler(CallbackQueryHandler(arg_usage, filters=regex("^help")))
-    TgClient.bot.add_handler(
-        MessageHandler(
-            mirror,
-            filters=command(BotCommands.MirrorCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            qb_mirror,
-            filters=command(BotCommands.QbMirrorCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            jd_mirror,
-            filters=command(BotCommands.JdMirrorCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            nzb_mirror,
-            filters=command(BotCommands.NzbMirrorCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            leech,
-            filters=command(BotCommands.LeechCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            qb_leech,
-            filters=command(BotCommands.QbLeechCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            jd_leech,
-            filters=command(BotCommands.JdLeechCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            nzb_leech,
-            filters=command(BotCommands.NzbLeechCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
     TgClient.bot.add_handler(
         MessageHandler(
             uphoster,
@@ -233,14 +146,6 @@ async def add_handlers():
             & CustomFilters.authorized,
         )
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            get_rss_menu,
-            filters=command(BotCommands.RssCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(CallbackQueryHandler(rss_listener, filters=regex("^rss")))
     TgClient.bot.add_handler(
         MessageHandler(
             run_shell,
@@ -293,16 +198,6 @@ async def add_handlers():
     )
     TgClient.bot.add_handler(
         MessageHandler(
-            imdb_search,
-            filters=command(BotCommands.IMDBCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(imdb_callback, filters=regex("^imdb"))
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             ping,
             filters=command(BotCommands.PingCommand, case_sensitive=True)
             & CustomFilters.authorized,
@@ -315,31 +210,6 @@ async def add_handlers():
             & CustomFilters.authorized,
         )
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            mediainfo,
-            filters=command(BotCommands.MediaInfoCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            picture_add,
-            filters=command(BotCommands.AddImageCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            pictures,
-            filters=command(BotCommands.ImagesCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(pics_callback, filters=regex("^images"))
-    )
-
     TgClient.bot.add_handler(
         MessageHandler(
             bot_stats,
@@ -360,16 +230,6 @@ async def add_handlers():
     TgClient.bot.add_handler(CallbackQueryHandler(stats_pages, filters=regex("^stats")))
     TgClient.bot.add_handler(CallbackQueryHandler(log_cb, filters=regex("^log")))
     TgClient.bot.add_handler(CallbackQueryHandler(start_cb, filters=regex("^start")))
-    TgClient.bot.add_handler(
-        MessageHandler(
-            torrent_search,
-            filters=command(BotCommands.SearchCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(torrent_search_update, filters=regex("^torser"))
-    )
     TgClient.bot.add_handler(
         MessageHandler(
             get_users_settings,
@@ -403,20 +263,6 @@ async def add_handlers():
     )
     TgClient.bot.add_handler(
         MessageHandler(
-            hydra_search,
-            filters=command(BotCommands.NzbSearchCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            gen_pyro_string,
-            filters=command(BotCommands.GenPyroSessCommand, case_sensitive=True)
-            & CustomFilters.sudo,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             change_category,
             filters=command(BotCommands.CategorySelectCommand)
             & CustomFilters.authorized,
@@ -425,51 +271,12 @@ async def add_handlers():
     TgClient.bot.add_handler(
         CallbackQueryHandler(confirm_category, filters=regex("^scat"))
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            drive_clean,
-            filters=command(BotCommands.GDCleanCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(confirm_drive_clean_cb, filters=regex("^gdccat"))
-    )
     if Config.SET_COMMANDS:
         global BOT_COMMANDS
 
-        def insert_at(d, k, v, i):
-            return dict(list(d.items())[:i] + [(k, v)] + list(d.items())[i:])
-
-        if Config.JD_EMAIL and Config.JD_PASS:
-            BOT_COMMANDS = insert_at(
-                BOT_COMMANDS,
-                "JdMirror",
-                "[link/file] Mirror to Upload Destination using JDownloader",
-                2,
-            )
-            BOT_COMMANDS = insert_at(
-                BOT_COMMANDS,
-                "JdLeech",
-                "[link/file] Leech files to Upload to Telegram using JDownloader",
-                6,
-            )
-
-        if len(Config.USENET_SERVERS) != 0:
-            BOT_COMMANDS = insert_at(
-                BOT_COMMANDS,
-                "NzbMirror",
-                "[nzb] Mirror to Upload Destination using Sabnzbd",
-                2,
-            )
-            BOT_COMMANDS = insert_at(
-                BOT_COMMANDS,
-                "NzbLeech",
-                "[nzb] Leech files to Upload to Telegram using Sabnzbd",
-                6,
-            )
-
         if Config.LOGIN_PASS:
+            def insert_at(d, k, v, i):
+                return dict(list(d.items())[:i] + [(k, v)] + list(d.items())[i:])
             BOT_COMMANDS = insert_at(
                 BOT_COMMANDS, "Login", "[password] Login to Bot", 14
             )
