@@ -27,7 +27,6 @@ from ..core.config_manager import Config, BinConfig
 from ..core.tg_client import TgClient
 from ..helper.ext_utils.bot_lock import ff_lock
 from .ext_utils.bot_utils import (
-    fetch_drive_cat,
     get_size_bytes,
     new_task,
     sync_to_async,
@@ -43,11 +42,7 @@ from .ext_utils.files_utils import (
     split_file,
 )
 from .ext_utils.links_utils import (
-    is_gdrive_id,
-    is_gdrive_link,
-    is_rclone_path,
     is_telegram_link,
-    is_mega_link,
 )
 from .ext_utils.media_utils import (
     FFMpeg,
@@ -57,14 +52,11 @@ from .ext_utils.media_utils import (
     take_ss,
 )
 from .ext_utils.metadata_utils import MetadataProcessor
-from .mirror_leech_utils.gdrive_utils.list import GoogleDriveList
-from .mirror_leech_utils.rclone_utils.list import RcloneList
 from .mirror_leech_utils.status_utils.ffmpeg_status import FFmpegStatus
 from .mirror_leech_utils.status_utils.sevenz_status import SevenZStatus
 from .telegram_helper.bot_commands import BotCommands
 from .telegram_helper.message_utils import (
     get_tg_link_message,
-    open_category_btns,
     send_message,
     send_status_message,
 )
@@ -170,67 +162,22 @@ class TaskConfig:
         self.mode = tuple()
 
     def _set_mode_engine(self):
-        if self.is_nzb and self.link and "/getnzb/api/" in self.link:
-            try:
-                nzb_id = self.link.split("/getnzb/api/")[1].split("?")[0]
-                self.source_url = f"NZB: {nzb_id}"
-            except Exception:
-                self.source_url = "NZB Link"
-        else:
-            self.source_url = (
-                self.link
-                if len(self.link) > 0 and self.link.startswith("http")
-                else (
-                    f"https://t.me/share/url?url={self.link}"
-                    if self.link
-                    else self.message.link
-                )
+        self.source_url = (
+            self.link
+            if len(self.link) > 0 and self.link.startswith("http")
+            else (
+                f"https://t.me/share/url?url={self.link}"
+                if self.link
+                else self.message.link
             )
-
-        out_mode = f"#{'Leech' if self.is_leech else 'UphosterUpload' if self.is_uphoster else 'Clone' if self.is_clone else 'Mega' if self.up_dest in ('mega', 'mega:') else 'RClone' if self.up_dest.startswith('mrcc:') or is_rclone_path(self.up_dest) else 'GDrive' if self.up_dest.startswith(('mtp:', 'tp:', 'sa:')) or is_gdrive_id(self.up_dest) else 'UpHosters'}"
-        out_mode += " (Zip)" if self.compress else " (Unzip)" if self.extract else ""
-
-        self.is_rclone = is_rclone_path(self.link)
-        self.is_gdrive = is_gdrive_link(self.source_url) if self.source_url else False
-        self.is_mega = is_mega_link(self.link) if self.source_url else False
-
-        in_mode = f"#{'Mega' if self.is_mega else 'qBit' if self.is_qbit else 'SABnzbd' if self.is_nzb else 'JDown' if self.is_jd else 'RCloneDL' if self.is_rclone else 'ytdlp' if self.is_ytdlp else 'GDrive' if (self.is_clone or self.is_gdrive) else 'Aria2' if (self.source_url and self.source_url != self.message.link) else 'TgMedia'}"
-
-        self.mode = (in_mode, out_mode)
-
-    def get_token_path(self, dest):
-        if dest.startswith("mtp:"):
-            return f"tokens/{self.user_id}.pickle"
-        elif Config.USE_SERVICE_ACCOUNTS and (
-            dest.startswith("sa:") or not dest.startswith("tp:")
-        ):
-            return "accounts"
-        else:
-            return "token.pickle"
-
-    def get_config_path(self, dest):
-        return (
-            f"rclone/{self.user_id}.conf" if dest.startswith("mrcc:") else "rclone.conf"
         )
 
-    async def is_token_exists(self, path, status):
-        if is_rclone_path(path):
-            config_path = self.get_config_path(path)
-            if config_path != "rclone.conf" and status == "up":
-                self.private_link = True
-            if not await aiopath.exists(config_path):
-                raise ValueError(f"Rclone Config: {config_path} not Exists!")
-        elif (
-            status == "dl"
-            and is_gdrive_link(path)
-            or status == "up"
-            and is_gdrive_id(path)
-        ):
-            token_path = self.get_token_path(path)
-            if token_path.startswith("tokens/") and status == "up":
-                self.private_link = True
-            if not await aiopath.exists(token_path):
-                raise ValueError(f"NO TOKEN! {token_path} not Exists!")
+        out_mode = f"#{'Leech' if self.is_leech else 'UphosterUpload' if self.is_uphoster else 'UpHosters'}"
+        out_mode += " (Zip)" if self.compress else " (Unzip)" if self.extract else ""
+
+        in_mode = f"#{'ytdlp' if self.is_ytdlp else 'TgMedia' if self.link == self.message.link else 'Direct'}"
+
+        self.mode = (in_mode, out_mode)
 
     async def before_start(self):
         self.name_swap = (
@@ -243,83 +190,10 @@ class TaskConfig:
         self.excluded_extensions = self.user_dict.get("EXCLUDED_EXTENSIONS") or (
             excluded_extensions
             if "EXCLUDED_EXTENSIONS" not in self.user_dict
-            else ["aria2", "!qB"]
+            else []
         )
-        if not self.rc_flags:
-            if self.user_dict.get("RCLONE_FLAGS"):
-                self.rc_flags = self.user_dict["RCLONE_FLAGS"]
-            elif "RCLONE_FLAGS" not in self.user_dict and Config.RCLONE_FLAGS:
-                self.rc_flags = Config.RCLONE_FLAGS
-        if self.link not in ["rcl", "gdl"]:
-            if not self.is_jd:
-                if is_rclone_path(self.link):
-                    if not self.link.startswith("mrcc:") and self.user_dict.get(
-                        "USER_TOKENS", False
-                    ):
-                        self.link = f"mrcc:{self.link}"
-                    await self.is_token_exists(self.link, "dl")
-                elif is_gdrive_link(self.link):
-                    if not self.link.startswith(
-                        ("mtp:", "tp:", "sa:")
-                    ) and self.user_dict.get("USER_TOKENS", False):
-                        self.link = f"mtp:{self.link}"
-                    await self.is_token_exists(self.link, "dl")
-        elif self.link == "rcl":
-            if not self.is_ytdlp and not self.is_jd:
-                self.link = await RcloneList(self).get_rclone_path("rcd")
-                if not is_rclone_path(self.link):
-                    raise ValueError(self.link)
-        elif self.link == "gdl":
-            if not self.is_ytdlp and not self.is_jd:
-                self.link = await GoogleDriveList(self).get_target_id("gdd")
-                if not is_gdrive_id(self.link):
-                    raise ValueError(self.link)
 
         self.transmission_mode = Config.TRANSMISSION_MODE
-
-        if self.user_dict.get("UPLOAD_PATHS", False):
-            if self.up_dest in self.user_dict["UPLOAD_PATHS"]:
-                self.up_dest = self.user_dict["UPLOAD_PATHS"][self.up_dest]
-        elif "UPLOAD_PATHS" not in self.user_dict and Config.UPLOAD_PATHS:
-            if self.up_dest in Config.UPLOAD_PATHS:
-                self.up_dest = Config.UPLOAD_PATHS[self.up_dest]
-
-        if self.category and not self.is_leech:
-            dcats = fetch_drive_cat(self.user_id)
-            default_id = self.user_dict.get("GDRIVE_ID") or Config.GDRIVE_ID
-            default_index = self.user_dict.get("INDEX_URL") or Config.INDEX_URL
-            merged_cats = {
-                "Default": {"drive_id": default_id, "index_link": default_index},
-                **dcats,
-                **categories_dict,
-            }
-            if self.category == "gdl":
-                self.up_dest = "gdl"
-            elif self.category == "gd":
-                self.up_dest = default_id
-                self.index_link = default_index
-            elif "|" in self.category:
-                parts = self.category.split("|", 1)
-                self.up_dest = parts[0]
-                self.index_link = parts[1] if len(parts) > 1 else ""
-            elif is_gdrive_id(self.category):
-                self.up_dest = self.category
-            elif self.category in merged_cats:
-                self.up_dest = merged_cats[self.category]["drive_id"]
-                self.index_link = merged_cats[self.category].get("index_link", "")
-            else:
-                drive_id, index_link, is_cancelled = await open_category_btns(
-                    self.message
-                )
-                if is_cancelled:
-                    self.is_cancelled = True
-                    return
-                if drive_id:
-                    self.up_dest = drive_id
-                    self.index_link = index_link or ""
-            gc_used = True
-        else:
-            gc_used = False
 
         if self.ffmpeg_cmds and not isinstance(self.ffmpeg_cmds, list):
             if self.user_dict.get("FFMPEG_CMDS", None):
@@ -343,124 +217,30 @@ class TaskConfig:
 
         self.metadata_title = self.user_dict.get("METADATA")
 
-        if not self.is_leech:
-            self.stop_duplicate = (
-                self.user_dict.get("STOP_DUPLICATE")
-                or "STOP_DUPLICATE" not in self.user_dict
-                and Config.STOP_DUPLICATE
-            )
-            if not gc_used:
-                default_upload = (
-                    self.user_dict.get("DEFAULT_UPLOAD", "") or Config.DEFAULT_UPLOAD
-                )
-                if not self.is_uphoster and (
-                    (not self.up_dest and default_upload == "rc")
-                    or self.up_dest == "rc"
-                ):
-                    self.up_dest = (
-                        self.user_dict.get("RCLONE_PATH") or Config.RCLONE_PATH
-                    )
-                elif not self.is_uphoster and (
-                    (not self.up_dest and default_upload == "gd")
-                    or self.up_dest == "gd"
-                ):
-                    self.up_dest = self.user_dict.get("GDRIVE_ID") or Config.GDRIVE_ID
-                elif (
-                    not self.up_dest and default_upload == "mega"
-                ) or self.up_dest == "mega":
-                    self.up_dest = "mega:"
+        if self.is_uphoster:
+            uphoster_service = self.user_dict.get("UPHOSTER_SERVICE", "gofile")
+            services = uphoster_service.split(",")
+            for service in services:
+                if service == "gofile":
+                    if not (
+                        self.user_dict.get("GOFILE_TOKEN") or Config.GOFILE_API
+                    ):
+                        raise ValueError("No Gofile Token Found!")
+                elif service == "buzzheavier":
+                    if not (
+                        self.user_dict.get("BUZZHEAVIER_TOKEN")
+                        or Config.BUZZHEAVIER_API
+                    ):
+                        raise ValueError("No BuzzHeavier Token Found!")
+                elif service == "pixeldrain":
+                    if not (
+                        self.user_dict.get("PIXELDRAIN_KEY")
+                        or Config.PIXELDRAIN_KEY
+                    ):
+                        raise ValueError("No PixelDrain Key Found!")
+            self.up_dest = "Uphoster"
 
-                if self.is_uphoster and not self.up_dest:
-                    uphoster_service = self.user_dict.get("UPHOSTER_SERVICE", "gofile")
-                    services = uphoster_service.split(",")
-                    for service in services:
-                        if service == "gofile":
-                            if not (
-                                self.user_dict.get("GOFILE_TOKEN") or Config.GOFILE_API
-                            ):
-                                raise ValueError("No Gofile Token Found!")
-                        elif service == "buzzheavier":
-                            if not (
-                                self.user_dict.get("BUZZHEAVIER_TOKEN")
-                                or Config.BUZZHEAVIER_API
-                            ):
-                                raise ValueError("No BuzzHeavier Token Found!")
-                        elif service == "pixeldrain":
-                            if not (
-                                self.user_dict.get("PIXELDRAIN_KEY")
-                                or Config.PIXELDRAIN_KEY
-                            ):
-                                raise ValueError("No PixelDrain Key Found!")
-                    self.up_dest = "Uphoster"
-
-            if not self.up_dest:
-                raise ValueError("No Upload Destination!")
-
-            if is_gdrive_id(self.up_dest):
-                if not self.up_dest.startswith(
-                    ("mtp:", "tp:", "sa:")
-                ) and self.user_dict.get("USER_TOKENS", False):
-                    self.up_dest = f"mtp:{self.up_dest}"
-            elif self.up_dest == "mega:":
-                pass
-            elif is_rclone_path(self.up_dest):
-                if not self.up_dest.startswith("mrcc:") and self.user_dict.get(
-                    "USER_TOKENS", False
-                ):
-                    self.up_dest = f"mrcc:{self.up_dest}"
-                self.up_dest = self.up_dest.strip("/")
-            elif self.up_dest in ("gdl", "rcl"):
-                pass
-            elif self.is_uphoster:
-                pass
-            else:
-                raise ValueError("Wrong Upload Destination!")
-
-            if (
-                self.up_dest not in ["rcl", "gdl"]
-                and not self.is_uphoster
-                and self.up_dest != "mega:"
-            ):
-                await self.is_token_exists(self.up_dest, "up")
-
-            if self.up_dest == "rcl":
-                if self.is_clone:
-                    if not is_rclone_path(self.link):
-                        raise ValueError(
-                            "You can't clone from different types of tools"
-                        )
-                    config_path = self.get_config_path(self.link)
-                else:
-                    config_path = None
-                self.up_dest = await RcloneList(self).get_rclone_path(
-                    "rcu", config_path
-                )
-                if not is_rclone_path(self.up_dest):
-                    raise ValueError(self.up_dest)
-            elif self.up_dest == "gdl":
-                if self.is_clone:
-                    if not is_gdrive_link(self.link):
-                        raise ValueError(
-                            "You can't clone from different types of tools"
-                        )
-                    token_path = self.get_token_path(self.link)
-                else:
-                    token_path = None
-                self.up_dest = await GoogleDriveList(self).get_target_id(
-                    "gdu", token_path
-                )
-                if not is_gdrive_id(self.up_dest):
-                    raise ValueError(self.up_dest)
-            elif self.is_clone:
-                if is_gdrive_link(self.link) and self.get_token_path(
-                    self.link
-                ) != self.get_token_path(self.up_dest):
-                    raise ValueError("You must use the same token to clone!")
-                elif is_rclone_path(self.link) and self.get_config_path(
-                    self.link
-                ) != self.get_config_path(self.up_dest):
-                    raise ValueError("You must use the same config to clone!")
-        else:
+        if self.is_leech:
             self.leech_dest = self.user_dict.get("LEECH_DUMP_CHAT")
 
             self.cmd_up_dest = self.up_dest
@@ -508,73 +288,6 @@ class TaskConfig:
                     elif str(self.up_dest).lstrip("-").isdigit():
                         self.up_dest = int(self.up_dest)
 
-                if self.transmission_mode in ("user", "both"):
-                    if not TgClient.user:
-                        self.transmission_mode = "bot"
-                    else:
-                        try:
-                            chat = await TgClient.user.get_chat(self.up_dest)
-                        except Exception:
-                            chat = None
-                        if chat is None:
-                            self.transmission_mode = "bot"
-                        else:
-                            uploader_id = TgClient.user.me.id
-                            if chat.type not in [
-                                ChatType.SUPERGROUP,
-                                ChatType.CHANNEL,
-                                ChatType.GROUP,
-                                ChatType.FORUM,
-                            ]:
-                                self.transmission_mode = "bot"
-                            else:
-                                member = await chat.get_member(uploader_id)
-                                if (
-                                    not member.privileges.can_manage_chat
-                                    or not member.privileges.can_delete_messages
-                                ):
-                                    self.transmission_mode = "bot"
-
-                try:
-                    chat = await self.client.get_chat(self.up_dest)
-                except Exception:
-                    chat = None
-                if chat is None:
-                    if self.transmission_mode == "bot":
-                        raise ValueError(
-                            "Chat not found! Try adding the bot to the chat and try again!"
-                        )
-                else:
-                    uploader_id = self.client.me.id
-                    if chat.type in [
-                        ChatType.SUPERGROUP,
-                        ChatType.CHANNEL,
-                        ChatType.GROUP,
-                        ChatType.FORUM,
-                    ]:
-                        member = await chat.get_member(uploader_id)
-                        if (
-                            not member.privileges.can_manage_chat
-                            or not member.privileges.can_delete_messages
-                        ):
-                            if self.transmission_mode == "bot":
-                                raise ValueError(
-                                    "You don't have enough privileges in this chat!"
-                                )
-                            else:
-                                self.transmission_mode = "user"
-                    else:
-                        if self.transmission_mode == "bot":
-                            try:
-                                await self.client.send_chat_action(
-                                    self.up_dest, ChatAction.TYPING
-                                )
-                            except Exception:
-                                raise ValueError("Start the bot and try again!")
-                        else:
-                            self.transmission_mode = "user"
-            elif self.transmission_mode in ("user", "both") and not self.is_super_chat:
-                self.transmission_mode = "bot"
             if self.split_size:
                 if self.split_size.isdigit():
                     self.split_size = int(self.split_size)
@@ -707,10 +420,6 @@ class TaskConfig:
         await obj(
             client=self.client,
             message=nextmsg,
-            is_qbit=self.is_qbit,
-            is_leech=self.is_leech,
-            is_jd=self.is_jd,
-            is_nzb=self.is_nzb,
             is_uphoster=self.is_uphoster,
             same_dir=self.same_dir,
             bulk=self.bulk,
@@ -753,10 +462,6 @@ class TaskConfig:
             await obj(
                 client=self.client,
                 message=nextmsg,
-                is_qbit=self.is_qbit,
-                is_leech=self.is_leech,
-                is_jd=self.is_jd,
-                is_nzb=self.is_nzb,
                 is_uphoster=self.is_uphoster,
                 same_dir=self.same_dir,
                 bulk=self.bulk,
