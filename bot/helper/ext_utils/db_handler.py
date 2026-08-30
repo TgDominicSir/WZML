@@ -120,21 +120,12 @@ class DbManager:
                 {"_id": _part()}, {"$unset": {db_path: ""}}, upsert=True
             )
 
-    async def update_nzb_config(self):
-        if self._return:
-            return
-        async with aiopen("configs/sabnzbd/SABnzbd.ini", "rb+") as pf:
-            nzb_conf = await pf.read()
-        await self.db.settings.nzb.replace_one(
-            {"_id": _part()}, {"SABnzbd__ini": nzb_conf}, upsert=True
-        )
-
     async def update_user_data(self, user_id):
         if self._return:
             return
         data = user_data.get(user_id, {})
         data = data.copy()
-        for key in ("THUMBNAIL", "RCLONE_CONFIG", "TOKEN_PICKLE", "USER_COOKIE_FILE"):
+        for key in ("THUMBNAIL", "TOKEN_PICKLE", "USER_COOKIE_FILE"):
             data.pop(key, None)
         pipeline = [
             {
@@ -152,7 +143,6 @@ class DbManager:
                                                 "$$field.k",
                                                 [
                                                     "THUMBNAIL",
-                                                    "RCLONE_CONFIG",
                                                     "TOKEN_PICKLE",
                                                     "USER_COOKIE_FILE",
                                                 ],

@@ -13,7 +13,7 @@ CMD_SUFFIX = ""
 AUTHORIZED_CHATS = ""
 SUDO_USERS = ""
 STATUS_LIMIT = 10
-DEFAULT_UPLOAD = "rc"
+DEFAULT_UPLOAD = "gd"
 STATUS_UPDATE_INTERVAL = 15
 FILELION_API = ""
 STREAMWISH_API = ""
@@ -48,8 +48,6 @@ DISABLE_BULK = False
 DISABLE_MULTI = False
 DISABLE_SEED = False
 DISABLE_FF_MODE = False
-DISABLE_JD = False
-DISABLE_NZB = False
 DISABLE_SEEDR = False
 DISABLE_RSS = False
 DISABLE_SEARCH = False
@@ -73,10 +71,7 @@ DIRECT_LIMIT = 0
 MEGA_LIMIT = 0
 TORRENT_LIMIT = 0
 GD_DL_LIMIT = 0
-RC_DL_LIMIT = 0
 CLONE_LIMIT = 0
-JD_LIMIT = 0
-NZB_LIMIT = 0
 SEEDR_LIMIT = 0
 YTDLP_LIMIT = 0
 PLAYLIST_LIMIT = 0
@@ -85,7 +80,7 @@ EXTRACT_LIMIT = 0
 ARCHIVE_LIMIT = 0
 STORAGE_LIMIT = 0
 
-# CPU limit for background services (SABnzbd, JDownloader). Default: 20
+# CPU limit for background services. Default: 20
 CPU_LIMIT = 20
 
 # CPUs given to FFmpeg. auto=60% of them, all/0=every CPU, a count like 5,
@@ -147,40 +142,7 @@ YT_TAGS = ["telegram", "bot", "youtube"]  # or as a comma-separated string
 YT_CATEGORY_ID = 22
 YT_PRIVACY_STATUS = "unlisted"
 
-# Rclone
-RCLONE_PATH = ""
-RCLONE_FLAGS = ""
-RCLONE_SERVE_URL = ""
 SHOW_CLOUD_LINK = True
-RCLONE_SERVE_PORT = 0
-RCLONE_SERVE_USER = ""
-RCLONE_SERVE_PASS = ""
-
-# JDownloader
-JD_EMAIL = ""
-JD_PASS = ""
-
-# Sabnzbd
-USENET_SERVERS = [
-    {
-        "name": "main",
-        "host": "",
-        "port": 563,
-        "timeout": 60,
-        "username": "",
-        "password": "",
-        "connections": 8,
-        "ssl": 1,
-        "ssl_verify": 2,
-        "ssl_ciphers": "",
-        "enable": 1,
-        "required": 0,
-        "optional": 0,
-        "retention": 0,
-        "send_group": 0,
-        "priority": 0,
-    }
-]
 
 # Update
 UPSTREAM_REPO = ""

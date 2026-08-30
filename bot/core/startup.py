@@ -21,10 +21,8 @@ from .. import (
     var_list,
     user_data,
     excluded_extensions,
-    nzb_options,
     qbit_options,
     rss_dict,
-    sabnzbd_client,
     sudo_users,
 )
 from ..helper.ext_utils.bot_utils import cmd_exec, derive_service_password
@@ -75,30 +73,10 @@ async def update_aria2_options():
         await TorrentManager.aria2.changeGlobalOption(aria2_options)
 
 
-async def update_nzb_options():
-    if Config.DISABLE_NZB or not Config.USENET_SERVERS:
-        return
-    LOGGER.info("Get SABnzbd options from server")
-    retries = 10
-    for i in range(retries):
-        try:
-            no = (await sabnzbd_client.get_config())["config"]["misc"]
-            nzb_options.update(no)
-            break
-        except Exception as e:
-            if i == retries - 1:
-                LOGGER.error(
-                    f"Failed to get SABnzbd options after {retries} retries: {e}"
-                )
-                return
-            LOGGER.warning(f"SABnzbd not ready, retrying ({i + 1}/{retries}): {e}")
-            await sleep(2)
-
-
 async def load_settings():
     if not Config.DATABASE_URL:
         return
-    for p in ["thumbnails", "tokens", "rclone"]:
+    for p in ["thumbnails", "tokens"]:
         if await aiopath.exists(p):
             await rmtree(p, ignore_errors=True)
     await database.connect()
@@ -138,7 +116,6 @@ async def load_settings():
             database.db.settings.qbittorrent.find_one(deploy_filter, {"_id": 0})
             if not Config.DISABLE_TORRENTS
             else sleep(0),
-            database.db.settings.nzb.find_one(deploy_filter, {"_id": 0}),
             database.db.users[PART].find_one(),
             database.db.rss[PART].find_one(),
         )
@@ -148,7 +125,6 @@ async def load_settings():
             pf_dict,
             a2c_options,
             qbit_opt,
-            nzb_opt,
             user_exists,
             rss_exists,
         ) = results
@@ -193,16 +169,6 @@ async def load_settings():
         if qbit_opt:
             qbit_options.update(qbit_opt)
 
-        if nzb_opt:
-            if await aiopath.exists("configs/sabnzbd/SABnzbd.ini.bak"):
-                await remove("configs/sabnzbd/SABnzbd.ini.bak")
-            for key, value in nzb_opt.items():
-                if value:
-                    file_ = key.replace("__", ".")
-                    async with aiopen(f"configs/sabnzbd/{file_}", "wb+") as f:
-                        await f.write(value)
-            LOGGER.info("Loaded.. Sabnzbd Data from MongoDB")
-
         if user_exists:
             rows = database.db.users[PART].find({})
             async for row in rows:
@@ -210,7 +176,6 @@ async def load_settings():
                 del row["_id"]
                 paths = {
                     "THUMBNAIL": f"thumbnails/{uid}.jpg",
-                    "RCLONE_CONFIG": f"rclone/{uid}.conf",
                     "TOKEN_PICKLE": f"tokens/{uid}.pickle",
                     "USER_COOKIE_FILE": f"cookies/{uid}/cookies.txt",
                 }
@@ -265,12 +230,6 @@ async def save_settings():
         )
     if await database.db.settings.qbittorrent.find_one(deploy_filter) is None:
         await database.save_qbit_settings()
-    if await database.db.settings.nzb.find_one(deploy_filter) is None:
-        async with aiopen("configs/sabnzbd/SABnzbd.ini", "rb+") as pf:
-            nzb_conf = await pf.read()
-        await database.db.settings.nzb.update_one(
-            deploy_filter, {"$set": {"SABnzbd__ini": nzb_conf}}, upsert=True
-        )
 
 
 async def update_variables():
@@ -365,14 +324,7 @@ async def load_configurations():
     from .cpu import service_cores
 
     cmd = f'chmod 600 .netrc && cp .netrc /root/.netrc && chmod +x setpkgs.sh && ./setpkgs.sh {BinConfig.ARIA2_NAME} "{service_cores()}" {Config.CPU_LIMIT}'
-    if not Config.DISABLE_NZB:
-        cmd += f" {BinConfig.SABNZBD_NAME}"
     await (await create_subprocess_shell(cmd)).wait()
-
-    if await aiopath.exists("cfg.zip"):
-        if await aiopath.exists("/JDownloader/cfg"):
-            await rmtree("/JDownloader/cfg", ignore_errors=True)
-        await cmd_exec(["7z", "x", "cfg.zip", "-o/JDownloader"])
 
     if await aiopath.exists("accounts.zip"):
         if await aiopath.exists("accounts"):

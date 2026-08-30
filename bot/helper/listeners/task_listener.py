@@ -44,14 +44,11 @@ from ..ext_utils.status_utils import get_readable_file_size, get_readable_time
 from ..ext_utils.task_manager import check_running_tasks, start_from_queued
 from ..mirror_leech_utils.uphoster_utils.multi_upload import MultiUphosterUpload
 from ..mirror_leech_utils.gdrive_utils.upload import GoogleDriveUpload
-from ..mirror_leech_utils.rclone_utils.transfer import RcloneTransferHelper
 from ..mirror_leech_utils.upload_utils.mega_upload import add_mega_upload
-from ..mirror_leech_utils.status_utils.uphoster_status import UphosterStatus
 from ..mirror_leech_utils.status_utils.gdrive_status import (
     GoogleDriveStatus,
 )
 from ..mirror_leech_utils.status_utils.queue_status import QueueStatus
-from ..mirror_leech_utils.status_utils.rclone_status import RcloneStatus
 from ..mirror_leech_utils.status_utils.telegram_status import TelegramStatus
 from ..mirror_leech_utils.status_utils.yt_status import YtStatus
 from ..mirror_leech_utils.upload_utils.telegram_uploader import TelegramUploader
@@ -410,20 +407,10 @@ class TaskListener(TaskConfig):
             mega_email = self.user_dict.get("MEGA_EMAIL") or ""
             mega_password = self.user_dict.get("MEGA_PASSWORD") or ""
             await add_mega_upload(self, up_path, mega_email, mega_password, gid)
-        else:
-            LOGGER.info(f"Rclone Upload Name: {self.name}")
-            RCTransfer = RcloneTransferHelper(self)
-            async with task_dict_lock:
-                task_dict[self.mid] = RcloneStatus(self, RCTransfer, gid, "up")
-            await gather(
-                update_status_message(self.message.chat.id),
-                RCTransfer.upload(up_path),
-            )
-            del RCTransfer
         return
 
     async def on_upload_complete(
-        self, link, files, folders, mime_type, rclone_path="", dir_id=""
+        self, link, files, folders, mime_type, dir_id=""
     ):
         if (
             self.is_super_chat
@@ -532,9 +519,6 @@ class TaskListener(TaskConfig):
 
             if (
                 link
-                or rclone_path
-                and Config.RCLONE_SERVE_URL
-                and not self.private_link
                 or multi_links
             ):
                 buttons = ButtonMaker()
@@ -547,18 +531,7 @@ class TaskListener(TaskConfig):
                 elif multi_links:
                     for name, url in multi_links:
                         buttons.url_button(name, url)
-                else:
-                    msg += f"\n\nPath: <code>{rclone_path}</code>"
-                if rclone_path and Config.RCLONE_SERVE_URL and not self.private_link:
-                    remote, rpath = rclone_path.split(":", 1)
-                    url_path = rutils.quote(f"{rpath}")
-                    share_url = f"{Config.RCLONE_SERVE_URL}/{remote}/{url_path}"
-                    if mime_type == "Folder":
-                        share_url += "/"
-                    buttons.url_button(
-                        "🔗 Rclone Link", share_url, style=ButtonStyle.PRIMARY
-                    )
-                if not rclone_path and dir_id:
+                if dir_id:
                     INDEX_URL = self.user_dict.get("INDEX_URL", "") or ""
                     if not INDEX_URL:
                         INDEX_URL = Config.INDEX_URL or ""
@@ -577,8 +550,6 @@ class TaskListener(TaskConfig):
                             )
                 button = buttons.build_menu(2)
             else:
-                if not multi_link_msg and rclone_path:
-                    msg += f"\n┃\n┠ Path: <code>{rclone_path}</code>"
                 button = None
             msg += f"\n┃\n┖ <b>Task By</b> → {self.tag}\n\n"
             group_msg = (

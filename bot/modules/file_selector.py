@@ -6,7 +6,6 @@ from .. import (
     task_dict_lock,
     user_data,
     LOGGER,
-    sabnzbd_client,
 )
 from ..core.config_manager import Config
 from ..core.tg_client import TgClient
@@ -55,7 +54,7 @@ async def select(_, message):
     if task is None:
         msg = (
             "Reply to an active /cmd which was used to start the download or add gid along with cmd\n\n"
-            + "This command mainly for selection incase you decided to select files from already added torrent/nzb. "
+            + "This command mainly for selection incase you decided to select files from already added torrent. "
             + "But you can always use /cmd with arg `s` to select files before download start."
         )
         await send_message(message, msg)
@@ -77,7 +76,7 @@ async def select(_, message):
     ]:
         await send_message(
             message,
-            "Task should be in download or pause (in case message was deleted by mistake) or queued status (in case you have used torrent or nzb file)!",
+            "Task should be in download or pause (in case message was deleted by mistake) or queued status (in case you have used torrent file)!",
         )
         return
     if task.name().startswith("[METADATA]") or task.name().startswith("Trying"):
@@ -88,9 +87,7 @@ async def select(_, message):
         await task.update()
         id_ = task.hash() if task.listener.is_qbit else task.gid()
         if not task.queued:
-            if task.listener.is_nzb:
-                await sabnzbd_client.pause_job(id_)
-            elif task.listener.is_qbit:
+            if task.listener.is_qbit:
                 await TorrentManager.qbittorrent.torrents.stop([id_])
             else:
                 try:
@@ -101,7 +98,7 @@ async def select(_, message):
                     )
         task.listener.select = True
     except Exception:
-        await send_message(message, "This is not a bittorrent or sabnzbd task!")
+        await send_message(message, "This is not a bittorrent task!")
         return
 
     SBUTTONS = bt_selection_buttons(id_, message)
@@ -181,9 +178,6 @@ async def confirm_selection(_, query):
                         LOGGER.error(
                             f"{e} Error in resume, this mostly happens after abuse aria2. Try to use select cmd again!"
                         )
-        elif task.listener.is_nzb:
-            if not task.queued:
-                await sabnzbd_client.resume_job(id_)
         await send_status_message(message)
         await delete_message(message)
     else:

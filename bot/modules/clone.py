@@ -5,11 +5,9 @@ from secrets import token_hex
 from aiofiles.os import remove
 
 from .. import LOGGER, bot_loop, task_dict, task_dict_lock
-from ..core.config_manager import BinConfig
 from ..helper.ext_utils.bot_utils import (
     COMMAND_USAGE,
     arg_parser,
-    cmd_exec,
     sync_to_async,
 )
 from ..helper.ext_utils.exceptions import DirectDownloadLinkException
@@ -18,7 +16,6 @@ from ..helper.ext_utils.links_utils import (
     is_gdrive_link,
     is_mega_link,
     is_mega_folder_link,
-    is_rclone_path,
     is_share_link,
 )
 from ..helper.ext_utils.task_manager import (
@@ -33,10 +30,8 @@ from ..helper.mirror_leech_utils.download_utils.direct_link_generator import (
 )
 from ..helper.mirror_leech_utils.gdrive_utils.clone import GoogleDriveClone
 from ..helper.mirror_leech_utils.gdrive_utils.count import GoogleDriveCount
-from ..helper.mirror_leech_utils.rclone_utils.transfer import RcloneTransferHelper
 from ..helper.mirror_leech_utils.upload_utils.mega_clone import add_mega_clone
 from ..helper.mirror_leech_utils.status_utils.gdrive_status import GoogleDriveStatus
-from ..helper.mirror_leech_utils.status_utils.rclone_status import RcloneStatus
 from ..helper.telegram_helper.message_utils import (
     auto_delete_message,
     delete_links,
@@ -202,127 +197,6 @@ class Clone(TaskListener):
                 flink, files, folders, mime_type, dir_id=dir_id
             )
             LOGGER.info(f"Cloning Done: {self.name}")
-        elif is_rclone_path(self.link):
-            if self.link.startswith("mrcc:"):
-                self.link = self.link.replace("mrcc:", "", 1)
-                self.up_dest = self.up_dest.replace("mrcc:", "", 1)
-                config_path = f"rclone/{self.user_id}.conf"
-            else:
-                config_path = "rclone.conf"
-
-            remote, src_path = self.link.split(":", 1)
-            self.link = src_path.strip("/")
-            if self.link.startswith("rclone_select"):
-                mime_type = "Folder"
-                src_path = ""
-                if not self.name:
-                    self.name = self.link
-            else:
-                src_path = self.link
-                cmd = [
-                    BinConfig.RCLONE_NAME,
-                    "lsjson",
-                    "--fast-list",
-                    "--stat",
-                    "--no-modtime",
-                    "--config",
-                    config_path,
-                    f"{remote}:{src_path}",
-                ]
-                res = await cmd_exec(cmd)
-                if res[2] != 0:
-                    if res[2] != -9:
-                        msg = f"Error: While getting rclone stat. Path: {remote}:{src_path}. Stderr: {res[1][:4000]}"
-                        await send_message(self.message, msg)
-                    return
-                rstat = loads(res[0])
-                if rstat["IsDir"]:
-                    if not self.name:
-                        self.name = src_path.rsplit("/", 1)[-1] if src_path else remote
-                    self.up_dest += (
-                        self.name if self.up_dest.endswith(":") else f"/{self.name}"
-                    )
-                    mime_type = "Folder"
-                else:
-                    if not self.name:
-                        self.name = src_path.rsplit("/", 1)[-1]
-                    mime_type = rstat["MimeType"]
-
-            await self.on_download_start()
-
-            RCTransfer = RcloneTransferHelper(self)
-            LOGGER.info(
-                f"Clone Started: Name: {self.name} - Source: {self.link} - Destination: {self.up_dest}"
-            )
-            gid = token_hex(5)
-            async with task_dict_lock:
-                task_dict[self.mid] = RcloneStatus(self, RCTransfer, gid, "cl")
-            if self.multi <= 1:
-                await send_status_message(self.message)
-            method = "sync" if sync else "copy"
-            flink, destination = await RCTransfer.clone(
-                config_path,
-                remote,
-                src_path,
-                mime_type,
-                method,
-            )
-            if self.link.startswith("rclone_select"):
-                await remove(self.link)
-            if not destination:
-                return
-            LOGGER.info(f"Cloning Done: {self.name}")
-            cmd1 = [
-                BinConfig.RCLONE_NAME,
-                "lsf",
-                "--fast-list",
-                "-R",
-                "--files-only",
-                "--config",
-                config_path,
-                destination,
-            ]
-            cmd2 = [
-                BinConfig.RCLONE_NAME,
-                "lsf",
-                "--fast-list",
-                "-R",
-                "--dirs-only",
-                "--config",
-                config_path,
-                destination,
-            ]
-            cmd3 = [
-                BinConfig.RCLONE_NAME,
-                "size",
-                "--fast-list",
-                "--json",
-                "--config",
-                config_path,
-                destination,
-            ]
-            res1, res2, res3 = await gather(
-                cmd_exec(cmd1),
-                cmd_exec(cmd2),
-                cmd_exec(cmd3),
-            )
-            if res1[2] != 0 or res2[2] != 0 or res3[2] != 0:
-                if res1[2] == -9:
-                    return
-                files = None
-                folders = None
-                self.size = 0
-                error = res1[1] or res2[1] or res3[1]
-                msg = f"Error: While getting rclone stat. Path: {destination}. Stderr: {error[:4000]}"
-                await self.on_upload_error(msg)
-            else:
-                files = len(res1[0].split("\n"))
-                folders = len(res2[0].strip().split("\n")) if res2[0] else 0
-                rsize = loads(res3[0])
-                self.size = rsize["bytes"]
-                await self.on_upload_complete(
-                    flink, files, folders, mime_type, destination
-                )
         elif is_mega_link(self.link):
             if is_mega_folder_link(self.link):
                 await send_message(

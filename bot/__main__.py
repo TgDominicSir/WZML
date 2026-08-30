@@ -52,16 +52,6 @@ async def main():
 
     await load_settings()
 
-    if not Config.DISABLE_NZB:
-        from bot import _sabnzbd_key, _update_sabnzbd_ini, sabnzbd_client
-
-        derived_key = _sabnzbd_key()
-        _update_sabnzbd_ini(derived_key)
-        sabnzbd_client._default_params["apikey"] = derived_key
-        from .helper.ext_utils.db_handler import database
-
-        await database.update_nzb_config()
-
     from .helper.telegram_helper.bot_commands import BotCommands
 
     BotCommands.refresh_commands()
@@ -93,13 +83,10 @@ async def main():
     await gather(
         update_qb_options(),
         update_aria2_options(),
-        update_nzb_options(),
     )
-    from .core.jdownloader_booter import jdownloader
     from .helper.ext_utils.bot_utils import git_info, search_images
     from .helper.ext_utils.files_utils import clean_all
     from .helper.ext_utils.telegraph_helper import telegraph
-    from .helper.mirror_leech_utils.rclone_utils.serve import rclone_serve_booter
     from .modules import (
         get_packages_version,
         initiate_search_tools,
@@ -107,14 +94,11 @@ async def main():
 
     await save_settings()
     await git_info.init()
-    if not Config.DISABLE_JD:
-        bot_loop.create_task(jdownloader.boot())
     global _clean_task
     _clean_task = bot_loop.create_task(clean_all())
     bot_loop.create_task(initiate_search_tools())
     bot_loop.create_task(get_packages_version())
     bot_loop.create_task(telegraph.create_account())
-    bot_loop.create_task(rclone_serve_booter())
     bot_loop.create_task(search_images())
 
 
@@ -216,9 +200,7 @@ from .helper.ext_utils.bot_utils import derive_service_password
 
 _bot_id = (Config.BOT_TOKEN or "").split(":", 1)[0] or "0"
 qbit_pwd = derive_service_password(_bot_id, "qbit")
-nzb_pwd = derive_service_password(_bot_id, "sabnzbd")
 LOGGER.info(f"Web UI: qBittorrent: /qbit/?pass={qbit_pwd}")
-LOGGER.info(f"Web UI: SABnzbd: /nzb/?pass={nzb_pwd}")
 
 LOGGER.info("WZ Client(s) & Services Started !")
 bot_loop.run_forever()

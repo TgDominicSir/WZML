@@ -52,10 +52,7 @@ class EngineStatus:
         self.STATUS_YTDLP = f"yt-dlp v{ver.get('yt-dlp', 'N/A')}"
         self.STATUS_FFMPEG = f"ffmpeg v{ver.get('ffmpeg', 'N/A')}"
         self.STATUS_7Z = f"7z v{ver.get('7z', 'N/A')}"
-        self.STATUS_RCLONE = f"RClone v{ver.get('rclone', 'N/A')}"
-        self.STATUS_SABNZBD = f"SABnzbd+ v{ver.get('SABnzbd+', 'N/A')}"
         self.STATUS_QUEUE = "QSystem v2"
-        self.STATUS_JD = "JDownloader v2"
         self.STATUS_YT = "Youtube-Api"
         self.STATUS_METADATA = "Metadata"
         self.STATUS_UPHOSTER = "Uphoster"
@@ -293,7 +290,6 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
             if (
                 task.listener.is_torrent
                 or task.listener.is_qbit
-                or task.listener.is_nzb
             ):
                 msg += f"\n┠ <b>Select</b> → /{BotCommands.SelectCommand[1]}_{task.gid()[:8]}"
 

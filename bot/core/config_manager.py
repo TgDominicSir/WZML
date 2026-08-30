@@ -21,7 +21,7 @@ class Config:
     CMD_SUFFIX = ""
     DEFAULT_LANG = "en"
     DATABASE_URL = ""
-    DEFAULT_UPLOAD = "rc"
+    DEFAULT_UPLOAD = "gd"
     DELETE_LINKS = False
     DEBRID_LINK_API = ""
     DISABLE_TORRENTS = False
@@ -33,8 +33,6 @@ class Config:
     DISABLE_FF_MODE = False
     DISABLE_MEGA = False
     DISABLE_PLUGINS = False
-    DISABLE_JD = True
-    DISABLE_NZB = True
     DISABLE_SEEDR = True
     DISABLE_RSS = False
     DISABLE_SEARCH = False
@@ -72,8 +70,6 @@ class Config:
     INC_TASK_RESUME = False
     INDEX_URL = ""
     IS_TEAM_DRIVE = False
-    JD_EMAIL = ""
-    JD_PASS = ""
     MEGA_EMAIL = ""
     MEGA_PASSWORD = ""
     SEEDR_EMAIL = ""
@@ -83,10 +79,7 @@ class Config:
     MEGA_LIMIT = 0
     TORRENT_LIMIT = 0
     GD_DL_LIMIT = 0
-    RC_DL_LIMIT = 0
     CLONE_LIMIT = 0
-    JD_LIMIT = 0
-    NZB_LIMIT = 0
     SEEDR_LIMIT = 0
     YTDLP_LIMIT = 0
     PLAYLIST_LIMIT = 0
@@ -124,13 +117,7 @@ class Config:
     QUEUE_ALL = 0
     QUEUE_DOWNLOAD = 0
     QUEUE_UPLOAD = 0
-    RCLONE_FLAGS = ""
-    RCLONE_PATH = ""
-    RCLONE_SERVE_URL = ""
     SHOW_CLOUD_LINK = True
-    RCLONE_SERVE_USER = ""
-    RCLONE_SERVE_PASS = ""
-    RCLONE_SERVE_PORT = 8081
     RSS_CHAT = ""
     RSS_DELAY = 600
     RSS_SIZE_LIMIT = 0
@@ -160,7 +147,6 @@ class Config:
     DRIVE_CATEGORY_SA = ""
     UPSTREAM_REPO = ""
     UPSTREAM_BRANCH = "wzv3"
-    USENET_SERVERS = []
     USER_SESSION_STRING = ""
     TRANSMISSION_MODE = "both"
     USE_SERVICE_ACCOUNTS = False
@@ -211,22 +197,13 @@ class Config:
                     continue
                 if isinstance(value, str):
                     value = value.strip()
-                if attr == "DEFAULT_UPLOAD" and value != "gd":
-                    value = "rc"
-                elif attr in [
+                if attr in [
                     "BASE_URL",
-                    "RCLONE_SERVE_URL",
                     "INDEX_URL",
                     "SEARCH_API_LINK",
                 ]:
                     if value:
                         value = value.strip("/")
-                elif attr == "USENET_SERVERS":
-                    try:
-                        if not value[0].get("host"):
-                            continue
-                    except Exception:
-                        continue
                 setattr(cls, attr, value)
         if hasattr(settings, "LEECH_DUMP_CHAT"):
             legacy_value = getattr(settings, "LEECH_DUMP_CHAT")
@@ -309,22 +286,13 @@ class Config:
     def load_dict(cls, config_dict):
         for key, value in config_dict.items():
             if hasattr(cls, key):
-                if key == "DEFAULT_UPLOAD" and value != "gd":
-                    value = "rc"
-                elif key in [
+                if key in [
                     "BASE_URL",
-                    "RCLONE_SERVE_URL",
                     "INDEX_URL",
                     "SEARCH_API_LINK",
                 ]:
                     if value:
                         value = value.strip("/")
-                elif key == "USENET_SERVERS":
-                    try:
-                        if not value[0].get("host"):
-                            value = []
-                    except Exception:
-                        value = []
                 value = cls._convert_env_type(key, value)
                 setattr(cls, key, value)
         if config_dict.get("LEECH_DUMP_CHAT") and not cls.LEECH_LOG_CHAT:
@@ -346,5 +314,3 @@ class BinConfig:
     ARIA2_NAME = bin_name(0)
     QBIT_NAME = bin_name(1)
     FFMPEG_NAME = bin_name(2)
-    RCLONE_NAME = bin_name(3)
-    SABNZBD_NAME = bin_name(4)

@@ -46,7 +46,6 @@ from .ext_utils.files_utils import (
 from .ext_utils.links_utils import (
     is_gdrive_id,
     is_gdrive_link,
-    is_rclone_path,
     is_telegram_link,
     is_mega_link,
 )
@@ -59,7 +58,6 @@ from .ext_utils.media_utils import (
 )
 from .ext_utils.metadata_utils import MetadataProcessor
 from .mirror_leech_utils.gdrive_utils.list import GoogleDriveList
-from .mirror_leech_utils.rclone_utils.list import RcloneList
 from .mirror_leech_utils.status_utils.ffmpeg_status import FFmpegStatus
 from .mirror_leech_utils.status_utils.sevenz_status import SevenZStatus
 from .telegram_helper.bot_commands import BotCommands
@@ -120,13 +118,10 @@ class TaskConfig:
         self.is_yt = False
         self.is_qbit = False
         self.is_mega = False
-        self.is_nzb = False
         self.is_seedr = False
-        self.is_jd = False
         self.is_clone = False
         self.is_uphoster = False
         self.is_gdrive = False
-        self.is_rclone = False
         self.is_ytdlp = False
         self.is_alldebrid = False
         self._alldebrid_magnet_id = 0
@@ -177,31 +172,23 @@ class TaskConfig:
         self.mode = tuple()
 
     def _set_mode_engine(self):
-        if self.is_nzb and self.link and "/getnzb/api/" in self.link:
-            try:
-                nzb_id = self.link.split("/getnzb/api/")[1].split("?")[0]
-                self.source_url = f"NZB: {nzb_id}"
-            except Exception:
-                self.source_url = "NZB Link"
-        else:
-            self.source_url = (
-                self.link
-                if len(self.link) > 0 and self.link.startswith("http")
-                else (
-                    f"https://t.me/share/url?url={self.link}"
-                    if self.link
-                    else self.message.link
-                )
+        self.source_url = (
+            self.link
+            if len(self.link) > 0 and self.link.startswith("http")
+            else (
+                f"https://t.me/share/url?url={self.link}"
+                if self.link
+                else self.message.link
             )
+        )
 
-        out_mode = f"#{'Leech' if self.is_leech else 'UphosterUpload' if self.is_uphoster else 'Clone' if self.is_clone else 'Mega' if self.up_dest in ('mega', 'mega:') else 'RClone' if self.up_dest.startswith('mrcc:') or is_rclone_path(self.up_dest) else 'GDrive' if self.up_dest.startswith(('mtp:', 'tp:', 'sa:')) or is_gdrive_id(self.up_dest) else 'UpHosters'}"
+        out_mode = f"#{'Leech' if self.is_leech else 'UphosterUpload' if self.is_uphoster else 'Clone' if self.is_clone else 'Mega' if self.up_dest in ('mega', 'mega:') else 'GDrive' if self.up_dest.startswith(('mtp:', 'tp:', 'sa:')) or is_gdrive_id(self.up_dest) else 'UpHosters'}"
         out_mode += " (Zip)" if self.compress else " (Unzip)" if self.extract else ""
 
-        self.is_rclone = is_rclone_path(self.link)
         self.is_gdrive = is_gdrive_link(self.source_url) if self.source_url else False
         self.is_mega = is_mega_link(self.link) if self.source_url else False
 
-        in_mode = f"#{'Seedr' if self.is_seedr else 'Mega' if self.is_mega else 'qBit' if self.is_qbit else 'SABnzbd' if self.is_nzb else 'JDown' if self.is_jd else 'RCloneDL' if self.is_rclone else 'ytdlp' if self.is_ytdlp else 'GDrive' if (self.is_clone or self.is_gdrive) else 'Aria2' if (self.source_url and self.source_url != self.message.link) else 'TgMedia'}"
+        in_mode = f"#{'Seedr' if self.is_seedr else 'Mega' if self.is_mega else 'qBit' if self.is_qbit else 'ytdlp' if self.is_ytdlp else 'GDrive' if (self.is_clone or self.is_gdrive) else 'Aria2' if (self.source_url and self.source_url != self.message.link) else 'TgMedia'}"
 
         self.mode = (in_mode, out_mode)
 
@@ -215,19 +202,8 @@ class TaskConfig:
         else:
             return "token.pickle"
 
-    def get_config_path(self, dest):
-        return (
-            f"rclone/{self.user_id}.conf" if dest.startswith("mrcc:") else "rclone.conf"
-        )
-
     async def is_token_exists(self, path, status):
-        if is_rclone_path(path):
-            config_path = self.get_config_path(path)
-            if config_path != "rclone.conf" and status == "up":
-                self.private_link = True
-            if not await aiopath.exists(config_path):
-                raise ValueError(f"Rclone Config: {config_path} not Exists!")
-        elif (
+        if (
             status == "dl"
             and is_gdrive_link(path)
             or status == "up"
@@ -252,32 +228,15 @@ class TaskConfig:
             if "EXCLUDED_EXTENSIONS" not in self.user_dict
             else ["aria2", "!qB"]
         )
-        if not self.rc_flags:
-            if self.user_dict.get("RCLONE_FLAGS"):
-                self.rc_flags = self.user_dict["RCLONE_FLAGS"]
-            elif "RCLONE_FLAGS" not in self.user_dict and Config.RCLONE_FLAGS:
-                self.rc_flags = Config.RCLONE_FLAGS
-        if self.link not in ["rcl", "gdl"]:
-            if not self.is_jd:
-                if is_rclone_path(self.link):
-                    if not self.link.startswith("mrcc:") and self.user_dict.get(
-                        "USER_TOKENS", False
-                    ):
-                        self.link = f"mrcc:{self.link}"
-                    await self.is_token_exists(self.link, "dl")
-                elif is_gdrive_link(self.link):
-                    if not self.link.startswith(
-                        ("mtp:", "tp:", "sa:")
-                    ) and self.user_dict.get("USER_TOKENS", False):
-                        self.link = f"mtp:{self.link}"
-                    await self.is_token_exists(self.link, "dl")
-        elif self.link == "rcl":
-            if not self.is_ytdlp and not self.is_jd:
-                self.link = await RcloneList(self).get_rclone_path("rcd")
-                if not is_rclone_path(self.link):
-                    raise ValueError(self.link)
+        if self.link not in ["gdl"]:
+            if is_gdrive_link(self.link):
+                if not self.link.startswith(
+                    ("mtp:", "tp:", "sa:")
+                ) and self.user_dict.get("USER_TOKENS", False):
+                    self.link = f"mtp:{self.link}"
+                await self.is_token_exists(self.link, "dl")
         elif self.link == "gdl":
-            if not self.is_ytdlp and not self.is_jd:
+            if not self.is_ytdlp:
                 self.link = await GoogleDriveList(self).get_target_id("gdd")
                 if not is_gdrive_id(self.link):
                     raise ValueError(self.link)
@@ -410,7 +369,7 @@ class TaskConfig:
             if not self.up_dest:
                 raise ValueError("No Upload Destination!")
 
-            if self.up_dest in ("gdl", "rcl"):
+            if self.up_dest in ("gdl",):
                 pass
             elif is_gdrive_id(self.up_dest):
                 if not self.up_dest.startswith(
@@ -419,39 +378,19 @@ class TaskConfig:
                     self.up_dest = f"mtp:{self.up_dest}"
             elif self.up_dest == "mega:":
                 pass
-            elif is_rclone_path(self.up_dest):
-                if not self.up_dest.startswith("mrcc:") and self.user_dict.get(
-                    "USER_TOKENS", False
-                ):
-                    self.up_dest = f"mrcc:{self.up_dest}"
-                self.up_dest = self.up_dest.strip("/")
             elif self.is_uphoster:
                 pass
             else:
                 raise ValueError("Wrong Upload Destination!")
 
             if (
-                self.up_dest not in ["rcl", "gdl"]
+                self.up_dest not in ["gdl"]
                 and not self.is_uphoster
                 and self.up_dest != "mega:"
             ):
                 await self.is_token_exists(self.up_dest, "up")
 
-            if self.up_dest == "rcl":
-                if self.is_clone:
-                    if not is_rclone_path(self.link):
-                        raise ValueError(
-                            "You can't clone from different types of tools"
-                        )
-                    config_path = self.get_config_path(self.link)
-                else:
-                    config_path = None
-                self.up_dest = await RcloneList(self).get_rclone_path(
-                    "rcu", config_path
-                )
-                if not is_rclone_path(self.up_dest):
-                    raise ValueError(self.up_dest)
-            elif self.up_dest == "gdl":
+            if self.up_dest == "gdl":
                 if self.is_clone:
                     if not is_gdrive_link(self.link):
                         raise ValueError(
@@ -470,10 +409,6 @@ class TaskConfig:
                     self.link
                 ) != self.get_token_path(self.up_dest):
                     raise ValueError("You must use the same token to clone!")
-                elif is_rclone_path(self.link) and self.get_config_path(
-                    self.link
-                ) != self.get_config_path(self.up_dest):
-                    raise ValueError("You must use the same config to clone!")
         else:
             self.leech_dest, self.leech_thread_id = parse_dest(
                 self.user_dict.get("LEECH_DUMP_CHAT")

@@ -10,12 +10,10 @@ from .. import (
     task_dict,
     bot_start_time,
     intervals,
-    sabnzbd_client,
     DOWNLOAD_DIR,
 )
 from ..core.config_manager import Config
 from ..core.torrent_manager import TorrentManager
-from ..core.jdownloader_booter import jdownloader
 from ..helper.ext_utils.bot_utils import new_task
 from ..helper.ext_utils.status_utils import (
     EngineStatus,
@@ -76,7 +74,7 @@ async def get_download_status(download):
     eng = download.engine
     speed = (
         download.speed()
-        if eng.startswith(("WzPyro", "yt-dlp", "RClone", "Google-API"))
+        if eng.startswith(("WzPyro", "yt-dlp", "Google-API"))
         else 0
     )
     return (
@@ -145,25 +143,6 @@ async def status_pages(_, query):
             for _, __, eng in status_results
         ):
             dl_speed, seed_speed = await TorrentManager.overall_speed()
-
-        if any(eng == eng_status.STATUS_SABNZBD for _, __, eng in status_results):
-            if not Config.DISABLE_NZB and sabnzbd_client.LOGGED_IN:
-                dl_speed += (
-                    int(
-                        float(
-                            (await sabnzbd_client.get_downloads())["queue"].get(
-                                "kbpersec", "0"
-                            )
-                        )
-                    )
-                    * 1024
-                )
-
-        if any(eng == eng_status.STATUS_JD for _, __, eng in status_results):
-            if not Config.DISABLE_JD and jdownloader.is_connected:
-                dl_speed += (
-                    await jdownloader.device.downloadcontroller.get_speed_in_bytes()
-                )
 
         for status, speed, _ in status_results:
             match status:
