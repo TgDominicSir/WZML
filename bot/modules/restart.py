@@ -14,7 +14,6 @@ from bot.version import get_version
 from .. import LOGGER, intervals, scheduler
 from ..core.config_manager import Config, BinConfig
 from ..core.tg_client import TgClient
-from ..core.torrent_manager import TorrentManager
 from ..helper.ext_utils.bot_utils import (
     THREAD_POOL,
     cmd_exec,
@@ -22,7 +21,6 @@ from ..helper.ext_utils.bot_utils import (
     resolve_command,
 )
 from ..helper.ext_utils.db_handler import database
-from ..helper.listeners.mega_listener import mega_cleanup
 from ..helper.telegram_helper import button_build
 from ..helper.telegram_helper.message_utils import (
     delete_message,
@@ -214,22 +212,12 @@ async def confirm_restart(_, query):
         else:
             restart_message = await send_message(reply_to, "<i>Restarting...</i>")
 
-            if qb := intervals["qb"]:
-                qb.cancel()
             if st := intervals["status"]:
                 for intvl in list(st.values()):
                     intvl.cancel()
 
             if scheduler.running:
                 scheduler.shutdown(wait=False)
-
-            await mega_cleanup()
-
-            try:
-                await TorrentManager.remove_all()
-            except Exception:
-                pass
-            await TorrentManager.close_all()
 
             await TgClient.stop()
 
@@ -240,7 +228,7 @@ async def confirm_restart(_, query):
                     "pkill",
                     "-9",
                     "-f",
-                    f"gunicorn|{BinConfig.ARIA2_NAME}|{BinConfig.QBIT_NAME}|{BinConfig.FFMPEG_NAME}|java|7z|split",
+                    f"gunicorn|{BinConfig.FFMPEG_NAME}|java|7z|split",
                 ]
             )
 
@@ -275,22 +263,15 @@ async def _runtime_reload():
         "bot.modules.plugin_manager",
         "bot.modules.cancel_task",
         "bot.modules.chat_permission",
-        "bot.modules.clone",
         "bot.modules.exec",
         "bot.modules.file_selector",
         "bot.modules.force_start",
-        "bot.modules.gd_count",
-        "bot.modules.gd_delete",
-        "bot.modules.gd_clean",
-        "bot.modules.gd_search",
         "bot.modules.help",
         "bot.modules.images",
         "bot.modules.category_select",
         "bot.modules.broadcast",
         "bot.modules.mirror_leech",
         "bot.modules.restart",
-        "bot.modules.rss",
-        "bot.modules.search",
         "bot.modules.services",
         "bot.modules.shell",
         "bot.modules.stats",

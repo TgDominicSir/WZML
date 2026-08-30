@@ -26,7 +26,6 @@ from ...modules.metadata import apply_metadata_title
 from ..common import TaskConfig
 from ...core.tg_client import TgClient
 from ...core.config_manager import Config
-from ...core.torrent_manager import TorrentManager
 from ..ext_utils.bot_utils import sync_to_async
 from ..ext_utils.links_utils import encode_slink
 from ..ext_utils.db_handler import database
@@ -44,7 +43,6 @@ from ..ext_utils.status_utils import get_readable_file_size, get_readable_time
 from ..ext_utils.task_manager import check_running_tasks, start_from_queued
 from ..mirror_leech_utils.uphoster_utils.multi_upload import MultiUphosterUpload
 from ..mirror_leech_utils.gdrive_utils.upload import GoogleDriveUpload
-from ..mirror_leech_utils.upload_utils.mega_upload import add_mega_upload
 from ..mirror_leech_utils.status_utils.gdrive_status import (
     GoogleDriveStatus,
 )
@@ -73,7 +71,7 @@ class TaskListener(TaskConfig):
                 for intvl in list(st.values()):
                     intvl.cancel()
             intervals["status"].clear()
-            await gather(TorrentManager.aria2.purgeDownloadResult(), delete_status())
+            await delete_status()
 
     def clear(self):
         self.subname = ""
@@ -402,11 +400,6 @@ class TaskListener(TaskConfig):
                 sync_to_async(drive.upload),
             )
             del drive
-        elif self.up_dest == "mega:":
-            LOGGER.info(f"Mega Upload Name: {self.name}")
-            mega_email = self.user_dict.get("MEGA_EMAIL") or ""
-            mega_password = self.user_dict.get("MEGA_PASSWORD") or ""
-            await add_mega_upload(self, up_path, mega_email, mega_password, gid)
         return
 
     async def on_upload_complete(

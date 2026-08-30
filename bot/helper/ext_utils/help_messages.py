@@ -324,7 +324,6 @@ YT_HELP_DICT = {
     "Thumb": thumb,
     "Split-Size": split_size,
     "Upload-Destination": upload,
-    "Rclone-Flags": rcf,
     "Bulk": bulk,
     "Sample-Video": sample_video,
     "Screenshot": screenshot,
@@ -344,17 +343,13 @@ MIRROR_HELP_DICT = {
     "DL-Auth": "<b>Direct link authorization</b>: -au -ap\n\n/cmd link -au username -ap password",
     "Headers": "<b>Direct link custom headers</b>: -h\n\n/cmd link -h key: value key1: value1",
     "Extract/Zip": extract_zip,
-    "Select-Files": "<b>Bittorrent/JDownloader/Sabnzbd File Selection</b>: -s\n\n/cmd link -s or by replying to file/link",
-    "Torrent-Seed": seed,
     "Multi-Link": multi_link,
     "Same-Directory": same_dir,
     "Thumb": thumb,
     "Split-Size": split_size,
     "Upload-Destination": upload,
-    "Rclone-Flags": rcf,
     "Bulk": bulk,
     "Join": join,
-    "Rclone-DL": rclone_dl,
     "Tg-Links": tg_links,
     "Sample-Video": sample_video,
     "Screenshot": screenshot,
@@ -367,41 +362,7 @@ MIRROR_HELP_DICT = {
     "Leech-Type": leech_as,
     "FFmpeg-Cmds": ffmpeg_cmds,
     "Metadata": metadata,
-    "AllDebrid": alldebrid_arg,
-    "Seedr": seedr_arg,
 }
-
-CLONE_HELP_DICT = {
-    "main": clone,
-    "Multi-Link": multi_link,
-    "Bulk": bulk,
-    "Gdrive": gdrive,
-    "Rclone": rclone_cl,
-}
-
-RSS_HELP_MESSAGE = """
-Use this format to add feed url:
-Title1 link (required)
-Title2 link -c cmd -inf xx -exf xx
-Title3 link -c cmd -d ratio:time -z password
-
--c command -up mrcc:remote:path/subdir -rcf --buffer-size:8M|key|key:value
--inf For included words filter.
--exf For excluded words filter.
--stv true or false (sensitive filter)
-
-Example: Title https://www.rss-url.com -inf 1080 or 720 or 144p|mkv or mp4|hevc -exf flv or web|xxx
-This filter will parse links that its titles contain `(1080 or 720 or 144p) and (mkv or mp4) and hevc` and doesn't contain (flv or web) and xxx words. You can add whatever you want.
-
-Another example: -inf  1080  or 720p|.web. or .webrip.|hevc or x264. This will parse titles that contain ( 1080  or 720p) and (.web. or .webrip.) and (hevc or x264). I have added space before and after 1080 to avoid wrong matching. If this `10805695` number in title it will match 1080 if added 1080 without spaces after it.
-
-Filter Notes:
-1. | means and.
-2. Add `or` between similar keys, you can add it between qualities or between extensions, so don't add filter like this f: 1080|mp4 or 720|web because this will parse 1080 and (mp4 or 720) and web ... not (1080 and mp4) or (720 and web).
-3. You can add `or` and `|` as much as you want.
-4. Take a look at the title if it has a static special character after or before the qualities or extensions or whatever and use them in the filter to avoid wrong match.
-Timeout: 60 sec.
-"""
 
 PASSWORD_ERROR_MESSAGE = """
 <b>This link requires a password!</b>
@@ -416,22 +377,16 @@ def get_bot_commands():
 
     static_commands = {
         "Mirror": "[link/file] Mirror to Upload Destination",
-        "QbMirror": "[magnet/torrent] Mirror to Upload Destination using qbit",
         "Ytdl": "[link] Mirror YouTube, m3u8, Social Media and yt-dlp supported urls",
         "UpHoster": "[link/file] Upload to DDL Servers",
         "Leech": "[link/file] Leech files to Upload to Telegram",
         "YtdlLeech": "[link] Leech YouTube, m3u8, Social Media and yt-dlp supported urls",
-        "Clone": "[link] Clone files/folders to GDrive",
         "UserSet": "User personal settings",
         "ForceStart": "[gid/reply] Force start from queued task",
-        "Count": "[link] Count no. of files/folders in GDrive",
-        "List": "[query] Search any Text which is available in GDrive",
-        "Search": "[query] Search torrents via Qbit Plugins",
-        "Select": "[gid/reply] Select files for NZB, Aria2, Qbit Tasks",
+        "Select": "[gid/reply] Select files for Tasks",
         "Ping": "Ping Bot to test Response Speed",
         "Status": "[id/me] Tasks Status of Bot",
         "Stats": "Bot, OS, Repo & System full Statistics",
-        "Rss": "User RSS Management Settings",
         "CancelAll": "Cancel all Tasks on the Bot",
         "Help": "Detailed help usage of the WZ Bot",
         "BotSet": "[SUDO] Bot Management Settings",
@@ -479,37 +434,21 @@ def get_help_string():
 
         if key == "Mirror":
             help_lines.append(f"{cmd_str}: Start mirroring to cloud.")
-        elif key == "QbMirror":
-            help_lines.append(f"{cmd_str}: Start Mirroring to cloud using qBittorrent.")
         elif key == "Ytdl":
             help_lines.append(f"{cmd_str}: Mirror yt-dlp supported link.")
         elif key == "UpHoster":
             help_lines.append(f"{cmd_str}: Upload to DDL Servers.")
         elif key == "Leech":
             help_lines.append(f"{cmd_str}: Start leeching to Telegram.")
-        elif key == "SeedrLink":
-            help_lines.append(f"{cmd_str}: Get direct Seedr HTTP download links.")
         elif key == "YtdlLeech":
             help_lines.append(f"{cmd_str}: Leech yt-dlp supported link.")
-        elif key == "Clone":
-            help_lines.append(
-                f"{cmd_str} [drive_url]: Copy file/folder to Google Drive."
-            )
-        elif key == "Count":
-            help_lines.append(
-                f"{cmd_str} [drive_url]: Count file/folder of Google Drive."
-            )
-        elif key == "Delete":
-            help_lines.append(
-                f"{cmd_str} [drive_url]: Delete file/folder from Google Drive (Only Owner & Sudo)."
-            )
         elif key == "UserSet":
             help_lines.append(f"{cmd_str} [query]: Users settings.")
         elif key == "BotSet":
             help_lines.append(f"{cmd_str} [query]: Bot settings.")
         elif key == "Select":
             help_lines.append(
-                f"{cmd_str}: Select files from torrents or nzb by gid or reply."
+                f"{cmd_str}: Select files by gid or reply."
             )
         elif key == "CancelTask":
             help_lines.append(f"{cmd_str} [gid]: Cancel task by gid or reply.")
@@ -517,10 +456,6 @@ def get_help_string():
             help_lines.append(f"{cmd_str} [gid]: Force start task by gid or reply.")
         elif key == "CancelAll":
             help_lines.append(f"{cmd_str} [query]: Cancel all [status] tasks.")
-        elif key == "List":
-            help_lines.append(f"{cmd_str} [query]: Search in Google Drive(s).")
-        elif key == "Search":
-            help_lines.append(f"{cmd_str} [query]: Search for torrents with API.")
         elif key == "Status":
             help_lines.append(f"{cmd_str}: Shows a status of all the downloads.")
         elif key == "Stats":
@@ -577,8 +512,6 @@ def get_help_string():
             help_lines.append(
                 f"/{BotCommands.ClearLocalsCommand}: Clear {BotCommands.AExecCommand} or {BotCommands.ExecCommand} locals (Only Owner)."
             )
-        elif key == "Rss":
-            help_lines.append(f"/{BotCommands.RssCommand}: RSS Menu.")
         elif key in BOT_COMMANDS:
             help_lines.append(f"{cmd_str}: {BOT_COMMANDS[key]}")
 

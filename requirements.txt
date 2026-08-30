@@ -4,8 +4,6 @@ aiohttp
 aioshutil
 anytree
 apscheduler
-aioaria2
-aioqbt
 imdbio
 cloudscraper
 dnspython
@@ -29,7 +27,6 @@ wzgram
 python-magic
 pytz
 pyyaml
-qbittorrent-api
 niquests
 speedtest-cli
 tenacity

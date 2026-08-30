@@ -7,7 +7,6 @@ from ...ext_utils.task_manager import (
     stop_duplicate_check,
     limit_checker,
 )
-from ...mirror_leech_utils.gdrive_utils.count import GoogleDriveCount
 from ...mirror_leech_utils.gdrive_utils.download import GoogleDriveDownload
 from ...mirror_leech_utils.status_utils.gdrive_status import GoogleDriveStatus
 from ...mirror_leech_utils.status_utils.queue_status import QueueStatus
@@ -15,21 +14,7 @@ from ...telegram_helper.message_utils import send_status_message
 
 
 async def add_gd_download(listener, path):
-    drive = GoogleDriveCount()
-    name, mime_type, listener.size, _, _ = await sync_to_async(
-        drive.count, listener.link, listener.user_id
-    )
-    if mime_type is None:
-        await listener.on_download_error(name)
-        return
-
-    listener.name = listener.name or name
     gid = token_hex(5)
-
-    msg, button = await stop_duplicate_check(listener)
-    if msg:
-        await listener.on_download_error(msg, button)
-        return
 
     if limit_exceeded := await limit_checker(listener):
         await listener.on_download_error(limit_exceeded, is_limit=True)
@@ -37,7 +22,7 @@ async def add_gd_download(listener, path):
 
     add_to_queue, event = await check_running_tasks(listener)
     if add_to_queue:
-        LOGGER.info(f"Added to Queue/Download: {listener.name}")
+        LOGGER.info(f"Added to Queue/Download: {listener.name or 'GDrive Download'}")
         async with task_dict_lock:
             task_dict[listener.mid] = QueueStatus(listener, gid, "dl")
         await listener.on_download_start()
@@ -52,9 +37,9 @@ async def add_gd_download(listener, path):
         task_dict[listener.mid] = GoogleDriveStatus(listener, drive, gid, "dl")
 
     if add_to_queue:
-        LOGGER.info(f"Start Queued Download from GDrive: {listener.name}")
+        LOGGER.info(f"Start Queued Download from GDrive: {listener.name or 'GDrive Download'}")
     else:
-        LOGGER.info(f"Download from GDrive: {listener.name}")
+        LOGGER.info(f"Download from GDrive: {listener.name or 'GDrive Download'}")
         await listener.on_download_start()
         if listener.multi <= 1:
             await send_status_message(listener.message)

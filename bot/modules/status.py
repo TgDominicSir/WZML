@@ -13,7 +13,6 @@ from .. import (
     DOWNLOAD_DIR,
 )
 from ..core.config_manager import Config
-from ..core.torrent_manager import TorrentManager
 from ..helper.ext_utils.bot_utils import new_task
 from ..helper.ext_utils.status_utils import (
     EngineStatus,
@@ -138,12 +137,6 @@ async def status_pages(_, query):
             )
 
         eng_status = EngineStatus()
-        if any(
-            eng in (eng_status.STATUS_ARIA2, eng_status.STATUS_QBIT)
-            for _, __, eng in status_results
-        ):
-            dl_speed, seed_speed = await TorrentManager.overall_speed()
-
         for status, speed, _ in status_results:
             match status:
                 case MirrorStatus.STATUS_DOWNLOAD:

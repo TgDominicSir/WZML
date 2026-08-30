@@ -46,8 +46,6 @@ from ..helper.telegram_helper.message_utils import (
 from ..version import get_version
 
 commands = {
-    "aria2": ([BinConfig.ARIA2_NAME, "--version"], r"aria2 version ([\d.]+)"),
-    "qBittorrent": ([BinConfig.QBIT_NAME, "--version"], r"qBittorrent v([\d.]+)"),
     "python": (["python3", "--version"], r"Python ([\d.]+)"),
     "yt-dlp": (["yt-dlp", "--version"], r"([\d.]+)"),
     "ffmpeg": (
@@ -58,14 +56,6 @@ commands = {
     "aiohttp": (["uv", "pip", "show", "aiohttp"], r"Version: ([\d.]+)"),
     "wzgram": (["uv", "pip", "show", "wzgram"], r"Version: ([\d.]+)"),
     "gapi": (["uv", "pip", "show", "google-api-python-client"], r"Version: ([\d.]+)"),
-    "mega": (
-        [
-            "python3",
-            "-c",
-            "from mega import MegaApi; print(MegaApi('test').getVersion())",
-        ],
-        r"v?([\d.]+)",
-    ),
 }
 
 
@@ -177,26 +167,20 @@ async def get_stats(event, key="home"):
         msg = f"""⌬ <b><i>Packages Statistics :</i></b>
 │
 ┟ <b>python:</b> v{ver.get("python", "N/A")}
-┠ <b>aria2:</b> v{ver.get("aria2", "N/A")}
-┠ <b>qBittorrent:</b> v{ver.get("qBittorrent", "N/A")}
 ┠ <b>yt-dlp:</b> v{ver.get("yt-dlp", "N/A")}
 ┠ <b>ffmpeg:</b> v{ver.get("ffmpeg", "N/A")}
 ┠ <b>7z:</b> v{ver.get("7z", "N/A")}
 ┠ <b>Aiohttp:</b> v{ver.get("aiohttp", "N/A")}
 ┠ <b>WzGram:</b> v{ver.get("wzgram", "N/A")}
-┠ <b>Google API:</b> v{ver.get("gapi", "N/A")}
-┖ <b>MegaSDK:</b> v{ver.get("mega", "N/A")}
+┖ <b>Google API:</b> v{ver.get("gapi", "N/A")}
 """
     elif key == "tlimits":
         msg = f"""⌬ <b><i>Bot Task Limits :</i></b>
 │
 ┟ <b>Direct Limit :</b> {Config.DIRECT_LIMIT or "∞"} GB
-┠ <b>Torrent Limit :</b> {Config.TORRENT_LIMIT or "∞"} GB
 ┠ <b>GDriveDL Limit :</b> {Config.GD_DL_LIMIT or "∞"} GB
-┠ <b>Clone Limit :</b> {Config.CLONE_LIMIT or "∞"} GB
 ┠ <b>YT-DLP Limit :</b> {Config.YTDLP_LIMIT or "∞"} GB
 ┠ <b>Playlist Limit :</b> {Config.PLAYLIST_LIMIT or "∞"}
-┠ <b>Mega Limit :</b> {Config.MEGA_LIMIT or "∞"} GB
 ┠ <b>Leech Limit :</b> {Config.LEECH_LIMIT or "∞"} GB
 ┠ <b>Archive Limit :</b> {Config.ARCHIVE_LIMIT or "∞"} GB
 ┠ <b>Extract Limit :</b> {Config.EXTRACT_LIMIT or "∞"} GB
@@ -321,17 +305,6 @@ async def get_version_async(command, regex, timeout=5):
         return f"Exception: {str(e)}"
 
 
-async def retry_mega_version():
-    await sleep(60)
-    command, regex = commands["mega"]
-    version = await get_version_async(command, regex, timeout=10)
-    if version != "Timeout" and not version.startswith("Exception"):
-        bot_cache["eng_versions"]["mega"] = version
-        LOGGER.info(f"MegaSDK Version Fetched: {version}")
-    else:
-        LOGGER.warning(f"Failed to fetch MegaSDK Version: {version}")
-
-
 @new_task
 async def get_packages_version():
     tasks = [get_version_async(command, regex) for command, regex in commands.values()]
@@ -347,10 +320,5 @@ async def get_packages_version():
     else:
         last_commit = "No UPSTREAM_REPO"
     bot_cache["commit"] = last_commit
-
-    if bot_cache["eng_versions"]["mega"] in ["Timeout", "N/A"] or bot_cache[
-        "eng_versions"
-    ]["mega"].startswith("Exception"):
-        bot_loop.create_task(retry_mega_version())
 
     LOGGER.info("Fetched Package Versions!")

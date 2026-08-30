@@ -47,16 +47,12 @@ LOGGER = getLogger(__name__)
 
 bot_cache = {}
 DOWNLOAD_DIR = "/usr/src/app/downloads/"
-intervals = {"status": {}, "qb": "", "stopAll": False}
-qb_torrents = {}
+intervals = {"status": {}, "stopAll": False}
 user_data = {}
-aria2_options = {}
-qbit_options = {}
 queued_dl = {}
 queued_up = {}
 status_dict = {}
 task_dict = {}
-rss_dict = {}
 shortener_dict = {}
 categories_dict = {}
 list_drives_dict = {}
@@ -71,7 +67,7 @@ var_list = [
     "UPSTREAM_BRANCH",
 ]
 auth_chats = {}
-excluded_extensions = ["aria2", "!qB"]
+excluded_extensions = []
 drives_names = []
 drives_ids = []
 index_urls = []
@@ -81,7 +77,6 @@ non_queued_up = set()
 multi_tags = set()
 task_dict_lock = Lock()
 queue_dict_lock = Lock()
-qb_listener_lock = Lock()
 same_directory_lock = Lock()
 
 

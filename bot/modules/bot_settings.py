@@ -32,14 +32,12 @@ from pyrogram.handlers import MessageHandler
 
 from .. import (
     LOGGER,
-    aria2_options,
     bot_loop,
     categories_dict,
     drives_ids,
     drives_names,
     index_urls,
     intervals,
-    qbit_options,
     scheduler,
     task_dict,
     shortener_dict,
@@ -56,8 +54,7 @@ from ..helper.ext_utils.bot_utils import (
 )
 from ..core.config_manager import Config, DEFAULT_CONFIG
 from ..core.tg_client import TgClient, db_partition_id
-from ..core.torrent_manager import TorrentManager
-from ..core.startup import update_qb_options, update_variables
+from ..core.startup import update_variables
 from ..helper.ext_utils.db_handler import database
 from ..helper.ext_utils.task_manager import start_from_queued
 from ..helper.telegram_helper.button_build import ButtonMaker
@@ -69,17 +66,13 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
     update_status_message,
 )
-from .rss import add_job
-from .search import initiate_search_tools
 
 start = 0
 state = "view"
 handler_dict = {}
 DEFAULT_VALUES = {
     "LEECH_SPLIT_SIZE": TgClient.MAX_SPLIT_SIZE,
-    "RSS_DELAY": 600,
     "STATUS_UPDATE_INTERVAL": 15,
-    "SEARCH_LIMIT": 0,
     "UPSTREAM_BRANCH": "wzv3",
     "DEFAULT_UPLOAD": "gd",
     "BOT_MAX_TASKS": 0,
@@ -100,14 +93,8 @@ BOOL_VARS = [
     "DISABLE_LEECH",
     "DISABLE_MIRROR",
     "DISABLE_MULTI",
-    "DISABLE_SEEDR",
-    "DISABLE_RSS",
-    "DISABLE_SEARCH",
-    "DISABLE_SEED",
     "DISABLE_STREAM",
-    "DISABLE_TORRENTS",
     "DISABLE_YTDLP",
-    "DISABLE_MEGA",
     "DISABLE_PLUGINS",
     "ENABLE_TELEMETRY",
     "EQUAL_SPLITS",
@@ -118,7 +105,6 @@ BOOL_VARS = [
     "MEDIA_GROUP",
     "MEDIA_STORE",
     "MEM_DEEP_STATS",
-    "SEEDR_DELETE_FOLDER",
     "SET_COMMANDS",
     "SHOW_CLOUD_LINK",
     "STOP_DUPLICATE",
@@ -153,13 +139,9 @@ DEFAULT_DESP = {
     "DISABLE_MIRROR": "Disable all mirror (upload to cloud) tasks. Default: False.",
     "DISABLE_BULK": "Disable bulk (zip/unzip) operations. Default: False.",
     "DISABLE_MULTI": "Disable multi-part splits. Default: False.",
-    "DISABLE_SEED": "Disable seeding after torrent download. Default: False.",
-    "DISABLE_FF_MODE": "Disable FFmpeg processing mode. Default: False.",
     "DISABLE_MEGA": "Disable Mega Processor for bot. Default: False.",
     "DISABLE_PLUGINS": "Disable the plugin system. Unloads every plugin and stops loading them at boot. Default: False.",
     "DISABLE_SEEDR": "Disable Seedr downloads. Default: False.",
-    "DISABLE_RSS": "Disable RSS feed monitoring. Saves CPU cycles. Default: False.",
-    "DISABLE_SEARCH": "Disable torrent search plugins. Saves network I/O. Default: False.",
     "DISABLE_STREAM": "Disable streaming. Stops /stream and the stream server. Default: False.",
     "DISABLE_YTDLP": "Disable YouTube/YT-DLP downloads. Default: False.",
     "EQUAL_SPLITS": "Split files into equal parts of LEECH_SPLIT_SIZE. Default: False.",
@@ -245,12 +227,6 @@ DEFAULT_DESP = {
     "QUEUE_DOWNLOAD": "Max parallel downloading tasks. 0 = unlimited.",
     "QUEUE_UPLOAD": "Max parallel uploading tasks. 0 = unlimited.",
     "SHOW_CLOUD_LINK": "Show cloud link button on leeched files. Default: True.",
-    "RSS_CHAT": "Chat ID for RSS feed notifications.",
-    "RSS_DELAY": "RSS feed check interval in seconds. Default: 600.",
-    "RSS_SIZE_LIMIT": "RSS download size limit in GB. 0 = unlimited.",
-    "SEARCH_API_LINK": "Search API app URL for multi-search.",
-    "SEARCH_LIMIT": "Max search results per site. 0 = default API limit.",
-    "SEARCH_PLUGINS": "qBittorrent search plugin URLs. List format.",
     "SET_COMMANDS": "Auto-set bot commands on start. Default: True.",
     "STATUS_LIMIT": "Number of status messages to show. Default: 10.",
     "STATUS_UPDATE_INTERVAL": "Status message refresh interval in seconds. Default: 15.",
@@ -382,27 +358,10 @@ async def get_buttons(key=None, edit_type=None, edit_mode=False):
         buttons.data_button("Config Variables", "botset var")
         buttons.data_button("Module Settings", "botset setonoff")
         buttons.data_button("Private Files", "botset private open")
-        buttons.data_button("Qbit Settings", "botset qbit")
-        buttons.data_button("Aria2c Settings", "botset aria")
         buttons.data_button("Close", "botset close", style=ButtonStyle.DANGER)
         msg = "Bot Settings:"
     elif edit_type is not None:
-        if edit_type == "ariavar":
-            buttons.data_button("Back", "botset aria", style=ButtonStyle.PRIMARY)
-            if key != "newkey":
-                buttons.data_button("Empty String", f"botset emptyaria {key}")
-            buttons.data_button("Close", "botset close", style=ButtonStyle.DANGER)
-            msg = (
-                "<i>Send a key with value.</i> Example: <code>https-proxy-user:value</code>\n┖ <b>Time Left :</b> <code>60 sec</code>"
-                if key == "newkey"
-                else f"<i>Send a valid value for <code>{key}</code>.</i> Current value is <code>{aria2_options[key]}</code>\n┖ <b>Time Left :</b> <code>60 sec</code>"
-            )
-        elif edit_type == "qbitvar":
-            buttons.data_button("Back", "botset qbit", style=ButtonStyle.PRIMARY)
-            buttons.data_button("Empty String", f"botset emptyqbit {key}")
-            buttons.data_button("Close", "botset close", style=ButtonStyle.DANGER)
-            msg = f"<i>Send a valid value for <code>{key}</code>.</i> Current value is <code>{qbit_options[key]}</code>\n┖ <b>Time Left :</b> <code>60 sec</code>"
-        elif edit_type == "editvar":
+        if edit_type == "editvar":
             msg = f"<b>Variable:</b> <code>{key}</code>\n\n"
             msg += f"<b>Description:</b> {DEFAULT_DESP.get(key, 'No Description Provided')}\n\n"
             value = Config.get(key)
@@ -626,37 +585,6 @@ async def get_buttons(key=None, edit_type=None, edit_mode=False):
 ┖ <b>Note:</b> Changing .netrc will not take effect for aria2c until restart."""
         if edit_mode:
             msg += "\n\n<i>Send the file name to delete the file, file to save the file & for new file create, follow below format.</i> \n\n<b>Format:</b> \n<code>file_name\n\ncontents of file</code></i>\n┖ <b>Time Left :</b> <code>60 sec</code>"
-    elif key == "aria":
-        for k in list(aria2_options.keys())[start : 10 + start]:
-            if k not in ["checksum", "index-out", "out", "pause", "select-file"]:
-                buttons.data_button(k, f"botset ariavar {k}")
-        if state == "view":
-            buttons.data_button("Edit", "botset edit aria")
-        else:
-            buttons.data_button("View", "botset view aria")
-        buttons.data_button("Add new key", "botset ariavar newkey")
-        buttons.data_button("Back", "botset back")
-        buttons.data_button("Close", "botset close", style=ButtonStyle.DANGER)
-        for x in range(0, len(aria2_options), 10):
-            buttons.data_button(
-                f"{int(x / 10)}", f"botset start aria {x}", position="footer"
-            )
-        msg = f"Aria2c Options | Page: {int(start / 10)} | State: {state}"
-    elif key == "qbit":
-        for k in list(qbit_options.keys())[start : 10 + start]:
-            buttons.data_button(k, f"botset qbitvar {k}")
-        if state == "view":
-            buttons.data_button("Edit", "botset edit qbit")
-        else:
-            buttons.data_button("View", "botset view qbit")
-        buttons.data_button("Sync Qbittorrent", "botset syncqbit")
-        buttons.data_button("Back", "botset back")
-        buttons.data_button("Close", "botset close", style=ButtonStyle.DANGER)
-        for x in range(0, len(qbit_options), 10):
-            buttons.data_button(
-                f"{int(x / 10)}", f"botset start qbit {x}", position="footer"
-            )
-        msg = f"Qbittorrent Options | Page: {int(start / 10)} | State: {state}"
     else:
         msg = "Unknown option"
 
@@ -831,8 +759,6 @@ async def edit_variable(_, message, pre_message, key):
         await initiate_search_tools()
     elif key in ["QUEUE_ALL", "QUEUE_DOWNLOAD", "QUEUE_UPLOAD"]:
         await start_from_queued()
-    elif key == "RSS_DELAY":
-        add_job()
 
 
 @new_task
@@ -911,18 +837,6 @@ async def _handle_service_toggle(key, disabled):
         else:
             spawn_stream_server()
             LOGGER.info("Stream server started via Module Settings")
-    elif key == "DISABLE_RSS":
-        if disabled:
-            if scheduler.running:
-                scheduler.shutdown(wait=False)
-                LOGGER.info("RSS Scheduler stopped via Module Settings")
-        else:
-            if not scheduler.running:
-                try:
-                    scheduler.start()
-                    LOGGER.info("RSS Scheduler started via Module Settings")
-                except Exception:
-                    pass
     elif key == "DISABLE_PLUGINS":
         from ..core.plugin_manager import get_plugin_manager
 
@@ -947,41 +861,6 @@ async def show_var_value(_, query, key):
             await send_file(query.message, out_file)
     else:
         await query.answer(value, show_alert=True)
-
-
-@new_task
-async def edit_aria(_, message, pre_message, key):
-    handler_dict[message.chat.id] = False
-    value = message.text
-    if key == "newkey":
-        key, value = [x.strip() for x in value.split(":", 1)]
-    elif value.lower() == "true":
-        value = "true"
-    elif value.lower() == "false":
-        value = "false"
-    await TorrentManager.change_aria2_option(key, value)
-    await update_buttons(pre_message, "aria")
-    await delete_message(message)
-    await database.update_aria2(key, value)
-
-
-@new_task
-async def edit_qbit(_, message, pre_message, key):
-    handler_dict[message.chat.id] = False
-    value = message.text
-    if value.lower() == "true":
-        value = True
-    elif value.lower() == "false":
-        value = False
-    elif key == "max_ratio":
-        value = float(value)
-    elif value.isdigit():
-        value = int(value)
-    await TorrentManager.qbittorrent.app.set_preferences({key: value})
-    qbit_options[key] = value
-    await update_buttons(pre_message, "qbit")
-    await delete_message(message)
-    await database.update_qbittorrent(key, value)
 
 
 @new_task
@@ -1134,24 +1013,8 @@ async def edit_bot_settings(client, query):
         if key is None:
             globals()["start"] = 0
         await update_buttons(message, key)
-    elif data[1] == "syncjd":
-        if not Config.JD_EMAIL or not Config.JD_PASS:
-            await query.answer(
-                "No Email or Password provided!",
-                show_alert=True,
-            )
-            return
-        await query.answer(
-            "Synchronization Started. JDownloader will get restarted. It takes up to 10 sec!",
-            show_alert=True,
-        )
-        await sync_jdownloader()
     elif data[1] in [
         "var",
-        "aria",
-        "qbit",
-        "nzb",
-        "nzbserver",
         "setonoff",
         "settoggle",
         "setlimit",
@@ -1185,8 +1048,6 @@ async def edit_bot_settings(client, query):
                     intervals["status"][key] = SetInterval(
                         value, update_status_message, key
                     )
-        elif data[2] == "RSS_SIZE_LIMIT":
-            value = 0
         elif data[2] == "EXCLUDED_EXTENSIONS":
             excluded_extensions.clear()
             excluded_extensions.extend(["aria2", "!qB"])
@@ -1214,9 +1075,7 @@ async def edit_bot_settings(client, query):
         if data[2] == "DATABASE_URL":
             await database.disconnect()
         await database.update_config({data[2]: value})
-        if data[2] in ("SEARCH_PLUGINS", "SEARCH_API_LINK"):
-            await initiate_search_tools()
-        elif data[2] in ("QUEUE_ALL", "QUEUE_DOWNLOAD", "QUEUE_UPLOAD"):
+        if data[2] in ("QUEUE_ALL", "QUEUE_DOWNLOAD", "QUEUE_UPLOAD"):
             await start_from_queued()
     elif data[1] == "syncqbit":
         await query.answer(
@@ -1292,23 +1151,6 @@ async def edit_bot_settings(client, query):
         elif value == "":
             value = None
         await query.answer(f"{value}", show_alert=True)
-    elif data[1] == "qbitvar" and state == "edit":
-        await query.answer()
-        await update_buttons(message, data[2], data[1])
-        pfunc = partial(edit_qbit, pre_message=message, key=data[2])
-        rfunc = partial(update_buttons, message, "qbit")
-        await event_handler(client, query, pfunc, rfunc)
-    elif data[1] == "qbitvar" and state == "view":
-        value = f"{qbit_options[data[2]]}"
-        if len(value) > 200:
-            await query.answer()
-            with BytesIO(str.encode(value)) as out_file:
-                out_file.name = f"{data[2]}.txt"
-                await send_file(message, out_file)
-            return
-        elif value == "":
-            value = None
-        await query.answer(f"{value}", show_alert=True)
     elif data[1] == "edit":
         await query.answer()
         globals()["state"] = "edit"
@@ -1370,12 +1212,6 @@ async def load_config():
             intervals["status"][key] = SetInterval(
                 Config.STATUS_UPDATE_INTERVAL, update_status_message, key
             )
-
-    if Config.TORRENT_TIMEOUT:
-        await TorrentManager.change_aria2_option(
-            "bt-stop-timeout", f"{Config.TORRENT_TIMEOUT}"
-        )
-        await database.update_aria2("bt-stop-timeout", f"{Config.TORRENT_TIMEOUT}")
 
     if not Config.INC_TASK_NOTIFY and not Config.INC_TASK_RESUME:
         await database.trunc_table("tasks")
@@ -1439,5 +1275,4 @@ async def load_config():
         await database.update_config(Config.get_all())
     else:
         await database.disconnect()
-    await gather(initiate_search_tools(), start_from_queued())
-    add_job()
+    await gather(start_from_queued())

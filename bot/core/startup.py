@@ -10,7 +10,6 @@ from aioshutil import rmtree
 from .. import (
     LOGGER,
     bot_loop,
-    aria2_options,
     auth_chats,
     categories_dict,
     drives_ids,
@@ -21,56 +20,12 @@ from .. import (
     var_list,
     user_data,
     excluded_extensions,
-    qbit_options,
-    rss_dict,
     sudo_users,
 )
-from ..helper.ext_utils.bot_utils import cmd_exec, derive_service_password
+from ..helper.ext_utils.bot_utils import cmd_exec
 from ..helper.ext_utils.db_handler import database
 from .config_manager import Config, BinConfig
 from .tg_client import TgClient, db_partition_id
-from .torrent_manager import TorrentManager
-
-
-def _qbit_password():
-    return derive_service_password(
-        (Config.BOT_TOKEN or "").split(":", 1)[0] or "0",
-        "qbit",
-    )
-
-
-async def update_qb_options():
-    LOGGER.info("Get qBittorrent options from server")
-    pwd = _qbit_password()
-    if not qbit_options:
-        if not TorrentManager.qbittorrent:
-            LOGGER.warning(
-                "qBittorrent is not initialized. Skipping qBittorrent options update."
-            )
-            return
-        opt = await TorrentManager.qbittorrent.app.preferences()
-        qbit_options.update(opt)
-        del qbit_options["listen_port"]
-        for k in list(qbit_options.keys()):
-            if k.startswith("rss"):
-                del qbit_options[k]
-        qbit_options["web_ui_password"] = pwd
-        await TorrentManager.qbittorrent.app.set_preferences({"web_ui_password": pwd})
-        await TorrentManager._auth_qbit()
-    else:
-        if qbit_options.get("web_ui_password") in ("admin", "admin1", ""):
-            qbit_options["web_ui_password"] = pwd
-        await TorrentManager.qbittorrent.app.set_preferences(qbit_options)
-        await TorrentManager._auth_qbit()
-
-
-async def update_aria2_options():
-    LOGGER.info("Get aria2 options from server")
-    if not aria2_options:
-        op = await TorrentManager.aria2.getGlobalOption()
-        aria2_options.update(op)
-    else:
-        await TorrentManager.aria2.changeGlobalOption(aria2_options)
 
 
 async def load_settings():
@@ -112,21 +67,13 @@ async def load_settings():
         results = await gather(
             database.db.settings.config.find_one(deploy_filter, {"_id": 0}),
             database.db.settings.files.find_one(deploy_filter, {"_id": 0}),
-            database.db.settings.aria2c.find_one(deploy_filter, {"_id": 0}),
-            database.db.settings.qbittorrent.find_one(deploy_filter, {"_id": 0})
-            if not Config.DISABLE_TORRENTS
-            else sleep(0),
             database.db.users[PART].find_one(),
-            database.db.rss[PART].find_one(),
         )
 
         (
             config_dict,
             pf_dict,
-            a2c_options,
-            qbit_opt,
             user_exists,
-            rss_exists,
         ) = results
 
         if old_config is None:
@@ -163,12 +110,6 @@ async def load_settings():
                     async with aiopen(file_, "wb+") as f:
                         await f.write(value)
 
-        if a2c_options:
-            aria2_options.update(a2c_options)
-
-        if qbit_opt:
-            qbit_options.update(qbit_opt)
-
         if user_exists:
             rows = database.db.users[PART].find({})
             async for row in rows:
@@ -202,15 +143,6 @@ async def load_settings():
                 user_data[uid] = row
             LOGGER.info("Users Data has been imported from MongoDB")
 
-        if rss_exists:
-            rows = database.db.rss[PART].find({})
-            async for row in rows:
-                user_id = row["_id"]
-                del row["_id"]
-                rss_dict[user_id] = row
-            LOGGER.info("RSS data has been imported from MongoDB")
-
-
 async def save_settings():
     if database.db is None:
         return
@@ -224,12 +156,6 @@ async def save_settings():
     await database.db.settings.config.update_one(
         deploy_filter, {"$set": config_file}, upsert=True
     )
-    if await database.db.settings.aria2c.find_one(deploy_filter) is None:
-        await database.db.settings.aria2c.update_one(
-            deploy_filter, {"$set": aria2_options}, upsert=True
-        )
-    if await database.db.settings.qbittorrent.find_one(deploy_filter) is None:
-        await database.save_qbit_settings()
 
 
 async def update_variables():
@@ -321,11 +247,6 @@ async def load_configurations():
         async with aiopen(".netrc", "w"):
             pass
 
-    from .cpu import service_cores
-
-    cmd = f'chmod 600 .netrc && cp .netrc /root/.netrc && chmod +x setpkgs.sh && ./setpkgs.sh {BinConfig.ARIA2_NAME} "{service_cores()}" {Config.CPU_LIMIT}'
-    await (await create_subprocess_shell(cmd)).wait()
-
     if await aiopath.exists("accounts.zip"):
         if await aiopath.exists("accounts"):
             await rmtree("accounts", ignore_errors=True)
@@ -335,17 +256,6 @@ async def load_configurations():
 
     if not await aiopath.exists("accounts"):
         Config.USE_SERVICE_ACCOUNTS = False
-
-    await TorrentManager.initiate()
-
-    if Config.DISABLE_TORRENTS:
-        LOGGER.info("Torrents are disabled. Skipping qBittorrent initialization.")
-    else:
-        try:
-            await TorrentManager.qbittorrent.app.set_preferences(qbit_options)
-        except Exception as e:
-            LOGGER.error(f"Failed to configure qBittorrent: {e}")
-        await TorrentManager._auth_qbit()
 
     PORT = getenv("PORT", "") or "8080"
     if PORT:

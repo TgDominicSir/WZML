@@ -44,9 +44,6 @@ async def main():
         load_configurations,
         load_settings,
         save_settings,
-        update_aria2_options,
-        update_nzb_options,
-        update_qb_options,
         update_variables,
     )
 
@@ -80,23 +77,17 @@ async def main():
     )
     await gather(load_configurations(), update_variables())
 
-    await gather(
-        update_qb_options(),
-        update_aria2_options(),
-    )
     from .helper.ext_utils.bot_utils import git_info, search_images
     from .helper.ext_utils.files_utils import clean_all
     from .helper.ext_utils.telegraph_helper import telegraph
     from .modules import (
         get_packages_version,
-        initiate_search_tools,
     )
 
     await save_settings()
     await git_info.init()
     global _clean_task
     _clean_task = bot_loop.create_task(clean_all())
-    bot_loop.create_task(initiate_search_tools())
     bot_loop.create_task(get_packages_version())
     bot_loop.create_task(telegraph.create_account())
     bot_loop.create_task(search_images())
@@ -121,9 +112,7 @@ bot_loop.set_exception_handler(_handle_asyncio_exception)
 
 from .core.handlers import add_handlers
 from .helper.ext_utils.bot_utils import create_help_buttons
-from .helper.listeners.aria2_listener import add_aria2_callbacks
 
-add_aria2_callbacks()
 create_help_buttons()
 bot_loop.run_until_complete(add_handlers())
 
@@ -195,12 +184,6 @@ TgClient.bot.add_handler(
         filters=regex("^sessionrestart") & CustomFilters.sudo,
     )
 )
-
-from .helper.ext_utils.bot_utils import derive_service_password
-
-_bot_id = (Config.BOT_TOKEN or "").split(":", 1)[0] or "0"
-qbit_pwd = derive_service_password(_bot_id, "qbit")
-LOGGER.info(f"Web UI: qBittorrent: /qbit/?pass={qbit_pwd}")
 
 LOGGER.info("WZ Client(s) & Services Started !")
 bot_loop.run_forever()

@@ -5,8 +5,6 @@ from wz_bin import bin_name
 
 
 class Config:
-    ALLDEBRID_API_KEY = ""
-    ALLDEBRID_NO_SEED_TIMEOUT = 180
     AS_DOCUMENT = False
     AUTHORIZED_CHATS = ""
     BASE_URL = ""
@@ -23,19 +21,12 @@ class Config:
     DATABASE_URL = ""
     DEFAULT_UPLOAD = "gd"
     DELETE_LINKS = False
-    DEBRID_LINK_API = ""
-    DISABLE_TORRENTS = False
     DISABLE_LEECH = False
     DISABLE_MIRROR = False
     DISABLE_BULK = False
     DISABLE_MULTI = False
-    DISABLE_SEED = False
     DISABLE_FF_MODE = False
-    DISABLE_MEGA = False
     DISABLE_PLUGINS = False
-    DISABLE_SEEDR = True
-    DISABLE_RSS = False
-    DISABLE_SEARCH = False
     DISABLE_STREAM = False
     DISABLE_YTDLP = False
     PLUGIN_INDEXES = []
@@ -70,17 +61,8 @@ class Config:
     INC_TASK_RESUME = False
     INDEX_URL = ""
     IS_TEAM_DRIVE = False
-    MEGA_EMAIL = ""
-    MEGA_PASSWORD = ""
-    SEEDR_EMAIL = ""
-    SEEDR_PASSWORD = ""
-    SEEDR_DELETE_FOLDER = False
     DIRECT_LIMIT = 0
-    MEGA_LIMIT = 0
-    TORRENT_LIMIT = 0
     GD_DL_LIMIT = 0
-    CLONE_LIMIT = 0
-    SEEDR_LIMIT = 0
     YTDLP_LIMIT = 0
     PLAYLIST_LIMIT = 0
     LEECH_LIMIT = 0
@@ -110,20 +92,12 @@ class Config:
     CPU_LIMIT = 20
     FFMPEG_CORES = "auto"
     THROTTLE_SERVICES = "auto"
-    HYDRA_IP = ""
-    HYDRA_API_KEY = ""
     NAME_SWAP = ""
     OWNER_ID = 0
     QUEUE_ALL = 0
     QUEUE_DOWNLOAD = 0
     QUEUE_UPLOAD = 0
     SHOW_CLOUD_LINK = True
-    RSS_CHAT = ""
-    RSS_DELAY = 600
-    RSS_SIZE_LIMIT = 0
-    SEARCH_API_LINK = ""
-    SEARCH_LIMIT = 0
-    SEARCH_PLUGINS = []
     SET_COMMANDS = True
     STATUS_LIMIT = 10
     STATUS_UPDATE_INTERVAL = 15
@@ -138,7 +112,6 @@ class Config:
     AUTO_THUMBNAIL = False
     VERIFY_TIMEOUT = 0
     LOGIN_PASS = ""
-    TORRENT_TIMEOUT = 0
     TIMEZONE = "Asia/Kolkata"
     USER_MAX_TASKS = 0
     USER_TIME_INTERVAL = 0
@@ -311,6 +284,4 @@ DEFAULT_CONFIG = Config.get_all()
 
 
 class BinConfig:
-    ARIA2_NAME = bin_name(0)
-    QBIT_NAME = bin_name(1)
     FFMPEG_NAME = bin_name(2)

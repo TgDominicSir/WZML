@@ -17,8 +17,6 @@ DEFAULT_UPLOAD = "gd"
 STATUS_UPDATE_INTERVAL = 15
 FILELION_API = ""
 STREAMWISH_API = ""
-ALLDEBRID_API_KEY = ""
-ALLDEBRID_NO_SEED_TIMEOUT = 180
 EXCLUDED_EXTENSIONS = ""
 INC_TASK_NOTIFY = False
 YT_DLP_OPTIONS = ""
@@ -35,22 +33,12 @@ HELPER_TOKENS = ""
 STREAM_TOKENS = ""
 USE_HYPER = True
 
-# MegaAPI v4.30
-MEGA_EMAIL = ""
-MEGA_PASSWORD = ""
-DISABLE_MEGA = False
-
 # Disable Options
-DISABLE_TORRENTS = False
 DISABLE_LEECH = False
 DISABLE_MIRROR = False
 DISABLE_BULK = False
 DISABLE_MULTI = False
-DISABLE_SEED = False
 DISABLE_FF_MODE = False
-DISABLE_SEEDR = False
-DISABLE_RSS = False
-DISABLE_SEARCH = False
 DISABLE_STREAM = False
 DISABLE_YTDLP = False
 DISABLE_PLUGINS = False
@@ -68,11 +56,7 @@ AUTHOR_URL = "https://t.me/WZML_X"
 
 # Task Limits
 DIRECT_LIMIT = 0
-MEGA_LIMIT = 0
-TORRENT_LIMIT = 0
 GD_DL_LIMIT = 0
-CLONE_LIMIT = 0
-SEEDR_LIMIT = 0
 YTDLP_LIMIT = 0
 PLAYLIST_LIMIT = 0
 LEECH_LIMIT = 0
@@ -99,10 +83,6 @@ IMG_SOURCES = ["wallpaperflare"]
 
 # Insta video downloader api
 INSTADL_API = ""
-
-# Nzb search
-HYDRA_IP = ""
-HYDRA_API_KEY = ""
 
 # Media Search
 # Optional: Set IMDB_TEMPLATE to use old HTML format instead of Rich Messages.
@@ -173,8 +153,6 @@ LEECH_DUMP_CHATS = {
 LINKS_LOG_ID = ""
 MIRROR_LOG_ID = ""
 
-# qBittorrent/Aria2c
-TORRENT_TIMEOUT = 0
 BASE_URL = ""
 WEB_PINCODE = True
 
@@ -182,36 +160,3 @@ WEB_PINCODE = True
 QUEUE_ALL = 0
 QUEUE_DOWNLOAD = 0
 QUEUE_UPLOAD = 0
-
-# RSS
-RSS_DELAY = 600
-RSS_CHAT = ""
-RSS_SIZE_LIMIT = 0
-
-# Torrent Search
-SEARCH_API_LINK = ""
-SEARCH_LIMIT = 0
-SEARCH_PLUGINS = [
-    "https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/piratebay.py",
-    "https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/limetorrents.py",
-    "https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/torlock.py",
-    "https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/torrentscsv.py",
-    "https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/eztv.py",
-    "https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/torrentproject.py",
-    "https://raw.githubusercontent.com/MaurizioRicci/qBittorrent_search_engines/master/kickass_torrent.py",
-    "https://raw.githubusercontent.com/MaurizioRicci/qBittorrent_search_engines/master/yts_am.py",
-    "https://raw.githubusercontent.com/MadeOfMagicAndWires/qBit-plugins/master/engines/linuxtracker.py",
-    "https://raw.githubusercontent.com/MadeOfMagicAndWires/qBit-plugins/master/engines/nyaasi.py",
-    "https://raw.githubusercontent.com/LightDestory/qBittorrent-Search-Plugins/master/src/engines/ettv.py",
-    "https://raw.githubusercontent.com/LightDestory/qBittorrent-Search-Plugins/master/src/engines/glotorrents.py",
-    "https://raw.githubusercontent.com/LightDestory/qBittorrent-Search-Plugins/master/src/engines/thepiratebay.py",
-    "https://raw.githubusercontent.com/v1k45/1337x-qBittorrent-search-plugin/master/leetx.py",
-    "https://raw.githubusercontent.com/nindogo/qbtSearchScripts/master/magnetdl.py",
-    "https://raw.githubusercontent.com/msagca/qbittorrent_plugins/main/uniondht.py",
-    "https://raw.githubusercontent.com/khensolomon/leyts/master/yts.py",
-]
-
-# Seedr (magnet mirroring via seedr.cc)
-SEEDR_EMAIL = ""
-SEEDR_PASSWORD = ""
-SEEDR_DELETE_FOLDER = False

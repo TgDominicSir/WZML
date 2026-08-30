@@ -114,13 +114,6 @@ async def add_handlers():
     )
     TgClient.bot.add_handler(
         MessageHandler(
-            clone_node,
-            filters=command(BotCommands.CloneCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             aioexecute,
             filters=command(BotCommands.AExecCommand, case_sensitive=True)
             & CustomFilters.sudo,
@@ -157,42 +150,11 @@ async def add_handlers():
             & CustomFilters.authorized,
         )
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            count_node,
-            filters=command(BotCommands.CountCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            delete_file,
-            filters=command(BotCommands.DeleteCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            gdrive_search,
-            filters=command(BotCommands.ListCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(select_type, filters=regex("^list_types"))
-    )
     TgClient.bot.add_handler(CallbackQueryHandler(arg_usage, filters=regex("^help")))
     TgClient.bot.add_handler(
         MessageHandler(
             mirror,
             filters=command(BotCommands.MirrorCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            qb_mirror,
-            filters=command(BotCommands.QbMirrorCommand, case_sensitive=True)
             & CustomFilters.authorized,
         )
     )
@@ -205,26 +167,11 @@ async def add_handlers():
     )
     TgClient.bot.add_handler(
         MessageHandler(
-            seedr_link,
-            filters=command(BotCommands.SeedrLinkCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             uphoster,
             filters=command(BotCommands.UpHosterCommand, case_sensitive=True)
             & CustomFilters.authorized,
         )
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            get_rss_menu,
-            filters=command(BotCommands.RssCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(CallbackQueryHandler(rss_listener, filters=regex("^rss")))
     TgClient.bot.add_handler(
         MessageHandler(
             run_shell,
@@ -336,16 +283,6 @@ async def add_handlers():
     TgClient.bot.add_handler(CallbackQueryHandler(start_cb, filters=regex("^start")))
     TgClient.bot.add_handler(
         MessageHandler(
-            torrent_search,
-            filters=command(BotCommands.SearchCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(torrent_search_update, filters=regex("^torser"))
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             get_users_settings,
             filters=command(BotCommands.UsersCommand, case_sensitive=True)
             & CustomFilters.sudo,
@@ -388,29 +325,11 @@ async def add_handlers():
     TgClient.bot.add_handler(
         CallbackQueryHandler(confirm_dump_chat, filters=regex("^sdump"))
     )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            drive_clean,
-            filters=command(BotCommands.GDCleanCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(confirm_drive_clean_cb, filters=regex("^gdccat"))
-    )
     if Config.SET_COMMANDS:
         global BOT_COMMANDS
 
         def insert_at(d, k, v, i):
             return dict(list(d.items())[:i] + [(k, v)] + list(d.items())[i:])
-
-        if not Config.DISABLE_SEEDR:
-            BOT_COMMANDS = insert_at(
-                BOT_COMMANDS,
-                "SeedrLink",
-                "[magnet] Get direct Seedr HTTP download links",
-                9,
-            )
 
         if Config.LOGIN_PASS:
             BOT_COMMANDS = insert_at(

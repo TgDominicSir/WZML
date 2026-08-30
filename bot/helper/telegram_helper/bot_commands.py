@@ -8,17 +8,10 @@ class BotCommands:
 
     _static_commands = {
         "Mirror": ["mirror", "m"],
-        "QbMirror": ["qbmirror", "qm"],
         "Ytdl": ["ytdl", "y"],
         "UpHoster": ["uphoster", "up"],
         "Leech": ["leech", "l"],
         "YtdlLeech": ["ytdlleech", "yl"],
-        "SeedrLink": ["seedrlink", "slink", "srlink"],
-        "Clone": ["clone", "cl"],
-        "Count": "count",
-        "Delete": "del",
-        "List": "list",
-        "Search": "search",
         "Users": "users",
         "CancelTask": ["cancel", "c"],
         "CancelAll": ["cancelall", "call"],
@@ -36,7 +29,6 @@ class BotCommands:
         "AExec": "aexec",
         "Exec": "exec",
         "ClearLocals": "clearlocals",
-        "Rss": "rss",
         "AddImage": ["addimage", "ai"],
         "Images": ["images", "img"],
         "Authorize": ["authorize", "a"],
@@ -49,7 +41,6 @@ class BotCommands:
         "UserSet": ["usetting", "us"],
         "Select": ["select", "sel"],
         "CategorySelect": ["category", "ctsel"],
-        "GDClean": ["gdclean", "gdc"],
         "Plugins": "plugins",
         "Memory": ["memory", "mem"],
     }

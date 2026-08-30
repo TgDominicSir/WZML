@@ -21,9 +21,7 @@ from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from logging import INFO, WARNING, FileHandler, StreamHandler, basicConfig, getLogger
 
-from aioaria2 import Aria2HttpClient
 from aiohttp.client_exceptions import ClientError
-from aioqbt.client import create_client
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import (
     HTMLResponse,
@@ -32,7 +30,6 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from fastapi.templating import Jinja2Templates
-from aioqbt.exc import AQError
 
 from web.nodes import extract_file_ids, make_tree
 from aiohttp import ClientSession
@@ -170,12 +167,7 @@ def _verify_pin(gid, pin):
     )
 
 
-aria2 = None
-qbittorrent = None
-SERVICES = {
-    "qbit": {"url": "http://localhost:8090", "password": _service_pwd("qbit")},
-}
-
+SERVICES = {}
 
 STREAM_PORT = environ.get("STREAM_PORT", "") or "8091"
 STREAM_BASE = f"http://127.0.0.1:{STREAM_PORT}"
@@ -186,13 +178,9 @@ http_session = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global aria2, qbittorrent, http_session
-    aria2 = Aria2HttpClient("http://localhost:6800/jsonrpc")
-    qbittorrent = await create_client("http://localhost:8090/api/v2/")
+    global http_session
     http_session = ClientSession(auto_decompress=True)
     yield
-    await aria2.close()
-    await qbittorrent.close()
     await http_session.close()
 
 
@@ -324,95 +312,20 @@ async def handle_torrent(request: Request):
                     "message": "Mode is not specified",
                 }
             )
-        data = await request.json()
-        if mode == "rename":
-            if len(gid) > 20:
-                await handle_rename(gid, data)
-                content = {
-                    "files": [],
-                    "engine": "",
-                    "error": "",
-                    "message": "Rename successfully.",
-                }
-            else:
-                content = {
-                    "files": [],
-                    "engine": "",
-                    "error": "Rename failed.",
-                    "message": "Cannot rename aria2c torrent file",
-                }
-        else:
-            selected_files, unselected_files = extract_file_ids(data)
-            if len(gid) > 20:
-                await set_qbittorrent(gid, selected_files, unselected_files)
-            else:
-                selected_files = ",".join(selected_files)
-                await set_aria2(gid, selected_files)
-            content = {
-                "files": [],
-                "engine": "",
-                "error": "",
-                "message": "Your selection has been submitted successfully.",
-            }
+        content = {
+            "files": [],
+            "engine": "",
+            "error": "Torrent selection disabled",
+            "message": "Torrent selection disabled",
+        }
     else:
-        try:
-            if len(gid) > 20:
-                res = await qbittorrent.torrents.files(gid)
-                content = make_tree(res, "qbittorrent")
-            else:
-                res = await aria2.getFiles(gid)
-                op = await aria2.getOption(gid)
-                fpath = f"{op['dir']}/"
-                content = make_tree(res, "aria2", fpath)
-        except (ClientError, TimeoutError, Exception, AQError) as e:
-            LOGGER.error(str(e))
-            content = {
-                "files": [],
-                "engine": "",
-                "error": "Error getting files",
-                "message": str(e),
-            }
+        content = {
+            "files": [],
+            "engine": "",
+            "error": "Torrent selection disabled",
+            "message": "Torrent selection disabled",
+        }
     return JSONResponse(content)
-
-
-async def handle_rename(gid, data):
-    try:
-        _type = data["type"]
-        del data["type"]
-        if _type == "file":
-            await qbittorrent.torrents.rename_file(hash=gid, **data)
-        else:
-            await qbittorrent.torrents.rename_folder(hash=gid, **data)
-    except (ClientError, TimeoutError, Exception, AQError) as e:
-        LOGGER.error(f"{e} Errored in renaming")
-
-
-async def set_qbittorrent(gid, selected_files, unselected_files):
-    if unselected_files:
-        try:
-            await qbittorrent.torrents.file_prio(
-                hash=gid, id=unselected_files, priority=0
-            )
-        except (ClientError, TimeoutError, Exception, AQError) as e:
-            LOGGER.error(f"{e} Errored in paused")
-    if selected_files:
-        try:
-            await qbittorrent.torrents.file_prio(
-                hash=gid, id=selected_files, priority=1
-            )
-        except (ClientError, TimeoutError, Exception, AQError) as e:
-            LOGGER.error(f"{e} Errored in resumed")
-    await sleep(0.5)
-    if not await re_verify(unselected_files, selected_files, gid):
-        LOGGER.error(f"Verification Failed! Hash: {gid}")
-
-
-async def set_aria2(gid, selected_files):
-    res = await aria2.changeOption(gid, {"select-file": selected_files})
-    if res == "OK":
-        LOGGER.info(f"Verified! Gid: {gid}")
-    else:
-        LOGGER.info(f"Verification Failed! Report! Gid: {gid}")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -510,9 +423,6 @@ async def protected_proxy(
     return response
 
 
-@app.api_route("/qbit/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def qbittorrent_proxy(path: str = "", request: Request = None):
-    return await protected_proxy("qbit", path, request)
 
 
 _HOP = (

@@ -17,7 +17,6 @@ from pyrogram.handlers import MessageHandler
 
 from .. import auth_chats, excluded_extensions, sudo_users, user_data
 from ..core.config_manager import Config
-from ..core.seedr_client import SeedrClient
 from ..core.tg_client import TgClient
 from ..helper.ext_utils.bot_utils import (
     get_size_bytes,
@@ -25,7 +24,6 @@ from ..helper.ext_utils.bot_utils import (
     update_user_ldata,
 )
 from ..helper.ext_utils.db_handler import database
-from ..helper.ext_utils.mega_utils import get_mega_account_info
 from ..helper.ext_utils.media_utils import create_thumb
 from ..helper.ext_utils.status_utils import get_readable_file_size
 from ..helper.telegram_helper.button_build import ButtonMaker
@@ -74,8 +72,6 @@ advanced_options = [
     "USER_COOKIE_FILE",
 ]
 yt_options = ["YT_DESP", "YT_TAGS", "YT_CATEGORY_ID", "YT_PRIVACY_STATUS"]
-mega_options = ["MEGA_EMAIL", "MEGA_PASSWORD"]
-seedr_options = ["SEEDR_EMAIL", "SEEDR_PASSWORD", "SEEDR_DELETE_FOLDER"]
 
 user_settings_text = {
     "THUMBNAIL": (
@@ -300,26 +296,6 @@ Here I will explain how to use mltb.* which is reference to files you want to wo
         "String",
         "VikingFile folder name/path. Leave empty to upload to root.",
         "<i>Send your VikingFile folder name/path. Leave empty to upload to root.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
-    ),
-    "MEGA_EMAIL": (
-        "String",
-        "Your Mega.nz account email for per-user Mega downloads & uploads.",
-        "<i>Send your Mega.nz email address.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
-    ),
-    "MEGA_PASSWORD": (
-        "String",
-        "Your Mega.nz account password for per-user Mega downloads & uploads.",
-        "<i>Send your Mega.nz account password.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
-    ),
-    "SEEDR_EMAIL": (
-        "String",
-        "Your Seedr.cc account email for per-user Seedr cloud downloads.",
-        "<i>Send your Seedr.cc email address.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
-    ),
-    "SEEDR_PASSWORD": (
-        "String",
-        "Your Seedr.cc account password for per-user Seedr cloud downloads.",
-        "<i>Send your Seedr.cc account password.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
     ),
     "DRIVE_CAT": (
         "Dict",
@@ -798,9 +774,6 @@ async def get_user_settings(from_user, stype="main"):
             sd_msg = "Disabled"
 
         buttons.data_button("YT Up Tools", f"userset {user_id} yttools")
-        buttons.data_button("Mega Tools", f"userset {user_id} mega")
-        if not Config.DISABLE_SEEDR:
-            buttons.data_button("Seedr Tools", f"userset {user_id} seedr")
         if Config.DRIVE_CATEGORY_MODE:
             dc_enabled = user_dict.get("drive_cat_mode", False)
             buttons.data_button(
@@ -819,111 +792,6 @@ async def get_user_settings(from_user, stype="main"):
 ┃
 ┖ <b>Bot Stop Duplicate</b> → <b>{sd_msg}</b>
 """
-
-    elif stype == "mega":
-        mega_email = user_dict.get("MEGA_EMAIL", "")
-        mega_password = user_dict.get("MEGA_PASSWORD", "")
-        has_creds = bool(mega_email and mega_password)
-        masked_pass = (
-            (
-                mega_password[:2] + "*" * (len(mega_password) - 4) + mega_password[-2:]
-                if len(mega_password) > 6
-                else "****"
-            )
-            if mega_password
-            else ""
-        )
-
-        buttons.data_button("Mega Email", f"userset {user_id} menu MEGA_EMAIL")
-        if mega_email:
-            buttons.data_button(
-                "Mega Password", f"userset {user_id} menu MEGA_PASSWORD"
-            )
-
-        if has_creds:
-            buttons.data_button(
-                "Remove Account",
-                f"userset {user_id} remove MEGA_EMAIL",
-                position="l_body",
-            )
-
-        buttons.data_button("Back", f"userset {user_id} back mirror", "footer")
-        buttons.data_button(
-            "Close", f"userset {user_id} close", "footer", style=ButtonStyle.DANGER
-        )
-        btns = buttons.build_menu(1)
-
-        email_display = mega_email or "Not Set"
-        pass_display = masked_pass if mega_password else "Not Set"
-        account_status = "✓ Configured" if has_creds else "❌ Not Configured"
-        text = f"""⌬ <b>Mega Tools :</b>
-┟ <b>Name</b> → {user_name}
-┃
-┠ <b>Mega Email</b> → <code>{email_display}</code>
-┠ <b>Mega Password</b> → <code>{pass_display}</code>
-┖ <b>Account</b> → {account_status}"""
-
-    elif stype == "seedr":
-        seedr_email = user_dict.get("SEEDR_EMAIL", "")
-        seedr_password = user_dict.get("SEEDR_PASSWORD", "")
-        seedr_delete = (
-            user_dict.get("SEEDR_DELETE_FOLDER")
-            if "SEEDR_DELETE_FOLDER" in user_dict
-            else Config.SEEDR_DELETE_FOLDER
-        )
-        has_creds = bool(seedr_email and seedr_password)
-        masked_pass = (
-            (
-                seedr_password[:2]
-                + "*" * (len(seedr_password) - 4)
-                + seedr_password[-2:]
-                if len(seedr_password) > 6
-                else "****"
-            )
-            if seedr_password
-            else ""
-        )
-
-        buttons.data_button("Seedr Email", f"userset {user_id} menu SEEDR_EMAIL")
-        if seedr_email:
-            buttons.data_button(
-                "Seedr Password", f"userset {user_id} menu SEEDR_PASSWORD"
-            )
-
-        buttons.data_button(
-            f"Delete Folder: {'ON' if seedr_delete else 'OFF'}",
-            f"userset {user_id} tog SEEDR_DELETE_FOLDER {'f' if seedr_delete else 't'}",
-        )
-
-        if has_creds:
-            buttons.data_button(
-                "Clear Storage",
-                f"userset {user_id} clear_seedr",
-                position="l_body",
-            )
-            buttons.data_button(
-                "Remove Account",
-                f"userset {user_id} remove SEEDR_EMAIL",
-                position="l_body",
-            )
-
-        buttons.data_button("Back", f"userset {user_id} back mirror", "footer")
-        buttons.data_button(
-            "Close", f"userset {user_id} close", "footer", style=ButtonStyle.DANGER
-        )
-        btns = buttons.build_menu(1)
-
-        email_display = seedr_email or "Not Set"
-        pass_display = masked_pass if seedr_password else "Not Set"
-        account_status = "✓ Configured" if has_creds else "❌ Not Configured"
-        delete_display = "Enabled" if seedr_delete else "Disabled"
-        text = f"""⌬ <b>Seedr Tools :</b>
-┟ <b>Name</b> → {user_name}
-┃
-┠ <b>Seedr Email</b> → <code>{email_display}</code>
-┠ <b>Seedr Password</b> → <code>{pass_display}</code>
-┠ <b>Delete Folder</b> → {delete_display}
-┖ <b>Account</b> → {account_status}"""
 
     elif stype == "ffset":
         buttons.data_button(
@@ -1376,10 +1244,6 @@ async def get_menu(option, message, user_id):
         back_to = "advanced"
     elif option in uphoster_options:
         back_to = option.split("_")[0].lower()
-    elif option in mega_options:
-        back_to = "mega"
-    elif option in seedr_options:
-        back_to = "seedr"
     else:
         back_to = "back"
     buttons.data_button("Back", f"userset {user_id} {back_to}", "footer")
@@ -1531,46 +1395,6 @@ async def edit_user_settings(client, query):
     ]:
         await query.answer()
         await update_user_settings(query, data[2])
-    elif data[2] == "mega":
-        await query.answer()
-        msg, button = await get_user_settings(query.from_user, "mega")
-        await edit_message(message, msg, button)
-        mega_email = user_dict.get("MEGA_EMAIL", "")
-        mega_password = user_dict.get("MEGA_PASSWORD", "")
-        if mega_email and mega_password:
-            info_text = await get_mega_account_info(mega_email, mega_password)
-            msg += f"\n\n{info_text}"
-            await edit_message(message, msg, button)
-    elif data[2] == "seedr":
-        await query.answer()
-        msg, button = await get_user_settings(query.from_user, "seedr")
-        await edit_message(message, msg, button)
-        seedr_email = user_dict.get("SEEDR_EMAIL", "")
-        seedr_password = user_dict.get("SEEDR_PASSWORD", "")
-        if seedr_email and seedr_password:
-            try:
-                sc = SeedrClient(seedr_email, seedr_password)
-                await sc.login()
-                space_max, space_used = await sc.get_space()
-                msg += f"\n\n<b>Seedr Space</b> → <code>{get_readable_file_size(space_used)} / {get_readable_file_size(space_max)}</code>"
-            except Exception as e:
-                msg += f"\n\n<b>Seedr Login Failed:</b> {escape(str(e))}"
-            await edit_message(message, msg, button)
-    elif data[2] == "clear_seedr":
-        await query.answer("Clearing Seedr Storage...", show_alert=False)
-        seedr_email = user_dict.get("SEEDR_EMAIL", "")
-        seedr_password = user_dict.get("SEEDR_PASSWORD", "")
-        if seedr_email and seedr_password:
-            try:
-                from .mirror_leech import clear_seedr_account
-
-                t_c, f_c = await clear_seedr_account(seedr_email, seedr_password)
-                await query.answer(
-                    f"Removed {t_c} torrent(s) and {f_c} folder(s)!", show_alert=True
-                )
-            except Exception as e:
-                await query.answer(f"Failed: {e}"[:180], show_alert=True)
-        await update_user_settings(query, "seedr")
     elif data[2] == "yttools":
         await query.answer()
         await update_user_settings(query, data[2])

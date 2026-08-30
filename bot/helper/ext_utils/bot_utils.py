@@ -26,7 +26,6 @@ from ...core.config_manager import Config
 from ..telegram_helper.button_build import ButtonMaker
 from .db_handler import database
 from .help_messages import (
-    CLONE_HELP_DICT,
     MIRROR_HELP_DICT,
     YT_HELP_DICT,
 )
@@ -147,7 +146,6 @@ def _build_command_usage(help_dict, command_key):
 def create_help_buttons():
     _build_command_usage(MIRROR_HELP_DICT, "mirror")
     _build_command_usage(YT_HELP_DICT, "yt")
-    _build_command_usage(CLONE_HELP_DICT, "clone")
 
 
 def compare_versions(v1, v2):
@@ -258,8 +256,6 @@ def arg_parser(items, arg_base):
     if Config.DISABLE_MULTI and "-i" in items:
         arg_base["-i"] = 0
 
-    if Config.DISABLE_SEED and "-d" in items:
-        arg_base["-d"] = False
 
     while i < total:
         part = items[i]
