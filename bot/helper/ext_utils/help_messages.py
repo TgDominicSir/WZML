@@ -190,9 +190,7 @@ PASSWORD_ERROR_MESSAGE = """
 
 
 def get_bot_commands():
-    from ...core.plugin_manager import get_plugin_manager
-
-    static_commands = {
+    return {
         "Ytdl": "[link] Mirror YouTube, m3u8, Social Media and yt-dlp supported urls",
         "UpHoster": "[link/file] Upload to DDL Servers",
         "Leech": "[link/file] Leech files to Upload to Telegram",
@@ -211,21 +209,6 @@ def get_bot_commands():
         "Restart": "[SUDO] Reboot bot",
         "RestartSessions": "[SUDO] Reboot User Sessions",
     }
-
-    commands = static_commands.copy()
-
-    plugin_manager = get_plugin_manager()
-    if plugin_manager:
-        for plugin_info in plugin_manager.list_plugins():
-            if plugin_info.enabled and plugin_info.commands:
-                for cmd in plugin_info.commands:
-                    key = cmd.capitalize()
-                    if key not in commands:
-                        commands[key] = (
-                            plugin_info.description or f"Plugin command: {cmd}"
-                        )
-
-    return commands
 
 
 BOT_COMMANDS = get_bot_commands()

@@ -56,7 +56,6 @@ uphoster_options = [
     "VIKINGFILE_HASH",
     "VIKINGFILE_FOLDER",
 ]
-gdrive_options = ["TOKEN_PICKLE", "GDRIVE_ID", "INDEX_URL", "DRIVE_CAT"]
 ffset_options = [
     "FFMPEG_CMDS",
     "METADATA",
@@ -78,11 +77,6 @@ user_settings_text = {
         "Photo or Doc",
         "Custom Thumbnail is used as the thumbnail for the files you upload to telegram in media or document mode.",
         "<i>Send a photo to save it as custom thumbnail.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
-    ),
-    "TOKEN_PICKLE": (
-        "",
-        "",
-        "<i>Send your <code>token.pickle</code> to use as your Upload Dest to GDrive</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
     ),
     "LEECH_SPLIT_SIZE": (
         "",
@@ -119,20 +113,15 @@ user_settings_text = {
         "",
         "Send thumbnail layout (widthxheight, 2x2, 3x3, 2x4, 4x4, ...). Example: 3x3.</i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
     ),
-    "GDRIVE_ID": (
-        "",
-        "",
-        "Send Gdrive ID. If you want to use your token.pickle edit using owner/user token from usetting or add mtp: before the id. Example: mtp:F435RGGRDXXXXXX . </i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
-    ),
     "INDEX_URL": (
         "",
         "",
-        "Send Index URL for your gdrive option. </i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
+        "Send Index URL. </i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
     ),
     "UPLOAD_PATHS": (
         "",
         "",
-        "Send Dict of keys that have path values. Example: {'path 1': 'remote:rclonefolder', 'path 2': 'gdrive1 id', 'path 3': 'tg chat id', 'path 4': 'mrcc:remote:', 'path 5': b:@username} . </i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
+        "Send Dict of keys that have path values. Example: {'path 1': 'tg chat id', 'path 2': b:@username} . </i> \n┖ <b>Time Left :</b> <code>60 sec</code>",
     ),
     "EXCLUDED_EXTENSIONS": (
         "",
@@ -682,105 +671,8 @@ async def get_user_settings(from_user, stype="main"):
 ┠ <b>Gofile Folder ID</b> → <code>{gffolder}</code>
 ┖ <b>Auto-Create Folder</b> → <code>{"Enabled" if auto_create else "Disabled"}</code>"""
 
-    elif stype == "gdrive":
-        buttons.data_button("Default Gdrive ID", f"userset {user_id} menu GDRIVE_ID")
-        buttons.data_button("Default Index URL", f"userset {user_id} menu INDEX_URL")
-        buttons.data_button("Token.pickle", f"userset {user_id} menu TOKEN_PICKLE")
-        if (
-            user_dict.get("STOP_DUPLICATE", False)
-            or "STOP_DUPLICATE" not in user_dict
-            and Config.STOP_DUPLICATE
-        ):
-            buttons.data_button(
-                "Disable Stop Duplicate", f"userset {user_id} tog STOP_DUPLICATE f"
-            )
-            sd_msg = "Enabled"
-        else:
-            buttons.data_button(
-                "Enable Stop Duplicate",
-                f"userset {user_id} tog STOP_DUPLICATE t",
-                "l_body",
-            )
-            sd_msg = "Disabled"
-        buttons.data_button(
-            "User Drive Categories", f"userset {user_id} menu DRIVE_CAT", "header"
-        )
-        buttons.data_button("Back", f"userset {user_id} back mirror", "footer")
-        buttons.data_button(
-            "Close", f"userset {user_id} close", "footer", style=ButtonStyle.DANGER
-        )
-
-        tokenmsg = "Exists" if await aiopath.exists(token_pickle) else "Not Exists"
-        if user_dict.get("GDRIVE_ID", False):
-            gdrive_id = user_dict["GDRIVE_ID"]
-        elif GDID := Config.GDRIVE_ID:
-            gdrive_id = GDID
-        else:
-            gdrive_id = "None"
-        index = user_dict["INDEX_URL"] if user_dict.get("INDEX_URL", False) else "None"
-        upload_sa = user_dict.get("DRIVE_CATEGORY_SA") or Config.DRIVE_CATEGORY_SA
-        sa_display = escape(upload_sa) if upload_sa else "Not Set"
-        dc_status = "Enabled" if user_dict.get("drive_cat_mode", False) else "Disabled"
-        if not Config.DRIVE_CATEGORY_MODE:
-            dc_status = "Force Disabled (Global)"
-        drive_cat_val = user_dict.get("DRIVE_CAT")
-        lines = []
-        default_ilink_part = (
-            f" | <code>{escape(index)}</code>" if index != "None" else ""
-        )
-        lines.append(
-            f"  <b>Default</b>: <code>{escape(gdrive_id)}</code>{default_ilink_part}"
-        )
-        if drive_cat_val:
-            for k, v in drive_cat_val.items():
-                did = v.get("drive_id", "")
-                ilink = v.get("index_link", "")
-                ilink_part = f" | <code>{escape(ilink)}</code>" if ilink else ""
-                lines.append(
-                    f"  <b>{escape(k)}</b>: <code>{escape(did)}</code>{ilink_part}"
-                )
-        drive_cat_display = "\n   ".join(lines)
-        btns = buttons.build_menu(2)
-
-        text = f"""⌬ <b>GDrive Tools Settings :</b>
-┟ <b>Name</b> → {user_name}
-┃
-┠ <b>Gdrive ID</b> → <code>{gdrive_id}</code> <i>(Default)</i>
-┠ <b>Index URL</b> → <code>{index}</code> <i>(Default)</i>
-┠ <b>Stop Duplicate</b> → <b>{sd_msg}</b>
-┠ <b>GDrive token.pickle</b> → <b>{tokenmsg}</b>
-┠ <b>Drive Upload SA</b> → <code>{sa_display}</code>
-┠ <b>Drive Category</b> → <b>{dc_status}</b>
-┖ <b>Drive Categories:</b> 
-   {drive_cat_display}"""
     elif stype == "mirror":
-        buttons.data_button("GDrive Tools", f"userset {user_id} gdrive")
-        tokenmsg = "Exists" if await aiopath.exists(token_pickle) else "Not Exists"
-        if user_dict.get("GDRIVE_ID", False):
-            gdrive_id = user_dict["GDRIVE_ID"]
-        elif GI := Config.GDRIVE_ID:
-            gdrive_id = GI
-        else:
-            gdrive_id = "None"
-
-        index = user_dict["INDEX_URL"] if user_dict.get("INDEX_URL", False) else "None"
-        if (
-            user_dict.get("STOP_DUPLICATE", False)
-            or "STOP_DUPLICATE" not in user_dict
-            and Config.STOP_DUPLICATE
-        ):
-            sd_msg = "Enabled"
-        else:
-            sd_msg = "Disabled"
-
         buttons.data_button("YT Up Tools", f"userset {user_id} yttools")
-        if Config.DRIVE_CATEGORY_MODE:
-            dc_enabled = user_dict.get("drive_cat_mode", False)
-            buttons.data_button(
-                f"Drive Categories: {'ON' if dc_enabled else 'OFF'}",
-                f"userset {user_id} tog drive_cat_mode {'f' if dc_enabled else 't'}",
-                "header",
-            )
         buttons.data_button("Back", f"userset {user_id} back", "footer")
         buttons.data_button(
             "Close", f"userset {user_id} close", "footer", style=ButtonStyle.DANGER
@@ -790,7 +682,7 @@ async def get_user_settings(from_user, stype="main"):
         text = f"""⌬ <b>Mirror Settings :</b>
 ┟ <b>Name</b> → {user_name}
 ┃
-┖ <b>Bot Stop Duplicate</b> → <b>{sd_msg}</b>
+┖ <b>Mirror Tools Settings</b>
 """
 
     elif stype == "ffset":
@@ -1003,11 +895,6 @@ async def add_file(_, message, ftype, rfunc):
     handler_dict[user_id] = False
     if ftype == "THUMBNAIL":
         des_dir = await create_thumb(message, user_id)
-    elif ftype == "TOKEN_PICKLE":
-        tpath = f"{getcwd()}/tokens/"
-        await makedirs(tpath, exist_ok=True)
-        des_dir = f"{tpath}{user_id}.pickle"
-        await message.download(file_name=des_dir)
     elif ftype == "USER_COOKIE_FILE":
         cpath = f"{getcwd()}/cookies/{user_id}"
         await makedirs(cpath, exist_ok=True)
@@ -1202,12 +1089,11 @@ async def get_menu(option, message, user_id):
 
     file_dict = {
         "THUMBNAIL": f"thumbnails/{user_id}.jpg",
-        "TOKEN_PICKLE": f"tokens/{user_id}.pickle",
         "USER_COOKIE_FILE": f"cookies/{user_id}/cookies.txt",
     }
 
     buttons = ButtonMaker()
-    if option in ["THUMBNAIL", "TOKEN_PICKLE", "USER_COOKIE_FILE"]:
+    if option in ["THUMBNAIL", "USER_COOKIE_FILE"]:
         key = "file"
     else:
         key = "set"
@@ -1234,8 +1120,6 @@ async def get_menu(option, message, user_id):
             buttons.data_button("Remove", f"userset {user_id} remove {option}")
     if option in leech_options:
         back_to = "leech"
-    elif option in gdrive_options:
-        back_to = "gdrive"
     elif option in yt_options:
         back_to = "yttools"
     elif option in ffset_options:
@@ -1391,7 +1275,6 @@ async def edit_user_settings(client, query):
         "vikingfile",
         "ffset",
         "advanced",
-        "gdrive",
     ]:
         await query.answer()
         await update_user_settings(query, data[2])
@@ -1451,11 +1334,7 @@ async def edit_user_settings(client, query):
     elif data[2] == "tog":
         await query.answer()
         update_user_ldata(user_id, data[3], data[4] == "t")
-        if data[3] == "STOP_DUPLICATE":
-            back_to = "gdrive"
-        elif data[3] == "drive_cat_mode":
-            back_to = "mirror"
-        elif data[3] in ["USER_TOKENS", "USE_DEFAULT_COOKIE"]:
+        if data[3] in ["USER_TOKENS", "USE_DEFAULT_COOKIE"]:
             back_to = "general"
         elif data[3] == "GOFILE_AUTO_CREATE_FOLDER":
             back_to = "gofile"
@@ -1512,15 +1391,12 @@ async def edit_user_settings(client, query):
         await query.answer("Removed!", show_alert=True)
         if data[3] in [
             "THUMBNAIL",
-            "TOKEN_PICKLE",
             "USER_COOKIE_FILE",
         ]:
             if data[3] == "THUMBNAIL":
                 fpath = thumb_path
             elif data[3] == "USER_COOKIE_FILE":
                 fpath = yt_cookie_path
-            else:
-                fpath = token_pickle
             if await aiopath.exists(fpath):
                 await remove(fpath)
             del user_dict[data[3]]

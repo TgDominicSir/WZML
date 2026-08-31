@@ -13,14 +13,12 @@ CMD_SUFFIX = ""
 AUTHORIZED_CHATS = ""
 SUDO_USERS = ""
 STATUS_LIMIT = 10
-DEFAULT_UPLOAD = "gd"
 STATUS_UPDATE_INTERVAL = 15
 FILELION_API = ""
 STREAMWISH_API = ""
 EXCLUDED_EXTENSIONS = ""
 INC_TASK_NOTIFY = False
 YT_DLP_OPTIONS = ""
-USE_SERVICE_ACCOUNTS = False
 NAME_SWAP = ""
 FFMPEG_CMDS = {}
 UPLOAD_PATHS = {}
@@ -41,10 +39,6 @@ DISABLE_MULTI = False
 DISABLE_FF_MODE = False
 DISABLE_STREAM = False
 DISABLE_YTDLP = False
-DISABLE_PLUGINS = False
-
-# Plugins
-PLUGIN_INDEXES = []
 
 # Memory
 MEM_BUDGET = 0
@@ -63,9 +57,6 @@ LEECH_LIMIT = 0
 EXTRACT_LIMIT = 0
 ARCHIVE_LIMIT = 0
 STORAGE_LIMIT = 0
-
-# CPU limit for background services. Default: 20
-CPU_LIMIT = 20
 
 # CPUs given to FFmpeg. auto=60% of them, all/0=every CPU, a count like 5,
 # a percentage like 75%, or an explicit taskset list like 0-4 / 0,1,2,3.
@@ -109,11 +100,7 @@ BOT_PM = False
 SET_COMMANDS = True
 TIMEZONE = "Asia/Kolkata"
 
-# GDrive Tools
-GDRIVE_ID = ""
-GD_DESP = "Uploaded with WZ Bot"
-IS_TEAM_DRIVE = False
-STOP_DUPLICATE = False
+# Cloud Tools
 INDEX_URL = ""
 
 # YT Tools
@@ -138,7 +125,6 @@ LEECH_SUFFIX = ""
 LEECH_FONT = ""
 LEECH_CAPTION = ""
 THUMBNAIL_LAYOUT = ""
-AUTO_THUMBNAIL = False
 
 # Log Channels
 LEECH_LOG_CHAT = ""

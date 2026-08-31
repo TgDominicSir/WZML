@@ -69,7 +69,6 @@ DEFAULT_VALUES = {
     "LEECH_SPLIT_SIZE": TgClient.MAX_SPLIT_SIZE,
     "STATUS_UPDATE_INTERVAL": 15,
     "UPSTREAM_BRANCH": "wzv3",
-    "DEFAULT_UPLOAD": "gd",
     "BOT_MAX_TASKS": 0,
     "QUEUE_ALL": 0,
     "QUEUE_DOWNLOAD": 0,
@@ -79,10 +78,8 @@ DEFAULT_VALUES = {
 
 BOOL_VARS = [
     "AS_DOCUMENT",
-    "AUTO_THUMBNAIL",
     "BOT_PM",
     "DELETE_LINKS",
-    "DRIVE_CATEGORY_MODE",
     "DISABLE_BULK",
     "DISABLE_FF_MODE",
     "DISABLE_LEECH",
@@ -90,22 +87,18 @@ BOOL_VARS = [
     "DISABLE_MULTI",
     "DISABLE_STREAM",
     "DISABLE_YTDLP",
-    "DISABLE_PLUGINS",
     "ENABLE_TELEMETRY",
     "EQUAL_SPLITS",
     "GOFILE_AUTO_CREATE_FOLDER",
     "INC_TASK_NOTIFY",
     "INC_TASK_RESUME",
-    "IS_TEAM_DRIVE",
     "MEDIA_GROUP",
     "MEDIA_STORE",
     "MEM_DEEP_STATS",
     "SET_COMMANDS",
     "SHOW_CLOUD_LINK",
-    "STOP_DUPLICATE",
     "USE_HYPER",
     "USE_IMAGES",
-    "USE_SERVICE_ACCOUNTS",
     "WEB_PINCODE",
 ]
 
@@ -124,19 +117,11 @@ DEFAULT_DESP = {
     "CMD_SUFFIX": "Text appended to all bot commands. Useful for running multiple bot instances.",
     "DEFAULT_LANG": "Default bot language code. Default: en.",
     "DATABASE_URL": "MongoDB connection string for persistent storage.",
-    "DEFAULT_UPLOAD": "Default upload destination: gd (Google Drive) or rc (rclone). Default: rc.",
     "DELETE_LINKS": "Auto-delete source links/messages on task start. Default: False.",
-    "DEBRID_LINK_API": "Debrid-link.com API key for premium hoster support.",
-    "ALLDEBRID_API_KEY": "AllDebrid API key, used by the -ad flag to unlock links/magnets.",
-    "ALLDEBRID_NO_SEED_TIMEOUT": "Seconds a -ad magnet may stall with no seeders before aborting. 0 = no limit. Default: 180.",
-    "DISABLE_TORRENTS": "Disable all torrent downloads. Default: False.",
     "DISABLE_LEECH": "Disable all leech (download to Telegram) tasks. Default: False.",
     "DISABLE_MIRROR": "Disable all mirror (upload to cloud) tasks. Default: False.",
     "DISABLE_BULK": "Disable bulk (zip/unzip) operations. Default: False.",
     "DISABLE_MULTI": "Disable multi-part splits. Default: False.",
-    "DISABLE_MEGA": "Disable Mega Processor for bot. Default: False.",
-    "DISABLE_PLUGINS": "Disable the plugin system. Unloads every plugin and stops loading them at boot. Default: False.",
-    "DISABLE_SEEDR": "Disable Seedr downloads. Default: False.",
     "DISABLE_STREAM": "Disable streaming. Stops /stream and the stream server. Default: False.",
     "DISABLE_YTDLP": "Disable YouTube/YT-DLP downloads. Default: False.",
     "EQUAL_SPLITS": "Split files into equal parts of LEECH_SPLIT_SIZE. Default: False.",
@@ -155,10 +140,6 @@ DEFAULT_DESP = {
     "DEVUPLOADS_FOLDER": "DevUploads folder ID.",
     "VIKINGFILE_HASH": "VikingFile.to hash for uploads.",
     "VIKINGFILE_FOLDER": "VikingFile.to folder ID.",
-    "GDRIVE_ID": "Google Drive folder/TeamDrive ID for uploads.",
-    "DRIVE_CATEGORY_MODE": "Let users set their own Drive upload categories in /usettings. Default: False.",
-    "DRIVE_CATEGORY_SA": "Email given reader access on uploads that go outside GDRIVE_ID. Empty = skip.",
-    "GD_DESP": "Description for Google Drive uploads. Default: Uploaded with WZ Bot.",
     "AUTHOR_NAME": "Author name shown on Telegraph pages.",
     "AUTHOR_URL": "Author URL for Telegraph pages. Use channel URL for join button.",
     "INSTADL_API": "Instagram downloader API key.",
@@ -170,19 +151,8 @@ DEFAULT_DESP = {
     "IMG_SOURCES": "List of image sources to fetch from. Options: wallpaperflare, peapix, wallhaven. Default: wallpaperflare",
     "INC_TASK_NOTIFY": "Notify about incomplete tasks after restart. Default: False.",
     "INC_TASK_RESUME": "Auto-resume incomplete tasks on restart. Default: False.",
-    "INDEX_URL": "Google Drive Index URL for direct links.",
-    "IS_TEAM_DRIVE": "Set True for TeamDrive uploads. Default: False.",
-    "MEGA_EMAIL": "Mega.nz account email for premium.",
-    "MEGA_PASSWORD": "Mega.nz account password.",
-    "SEEDR_EMAIL": "Seedr account email for magnet mirroring.",
-    "SEEDR_PASSWORD": "Seedr account password.",
-    "SEEDR_DELETE_FOLDER": "Delete folder from Seedr after downloading locally. Default: False.",
+    "INDEX_URL": "Cloud Index URL for direct links.",
     "DIRECT_LIMIT": "Direct link download size limit in GB. 0 = unlimited.",
-    "MEGA_LIMIT": "Mega download size limit in GB. 0 = unlimited.",
-    "TORRENT_LIMIT": "Torrent download size limit in GB. 0 = unlimited.",
-    "GD_DL_LIMIT": "Google Drive download size limit in GB. 0 = unlimited.",
-    "CLONE_LIMIT": "Google Drive clone size limit in GB. 0 = unlimited.",
-    "SEEDR_LIMIT": "Seedr download size limit in GB. 0 = unlimited.",
     "YTDLP_LIMIT": "yt-dlp download size limit in GB. 0 = unlimited.",
     "PLAYLIST_LIMIT": "Max items to download from a playlist. 0 = unlimited.",
     "LEECH_LIMIT": "Leech (Telegram upload) size limit in GB. 0 = unlimited.",
@@ -194,8 +164,6 @@ DEFAULT_DESP = {
     "LINKS_LOG_ID": "Chat ID for link logging.",
     "MIRROR_LOG_ID": "Chat ID(s) for mirror logs. Space-separated for multiple.",
     "LEECH_PREFIX": "Prefix added to leeched file names.",
-    "TMDB_ACCESS_TOKEN": "TMDb API key (v3) or Read Access Token (v4), used by AUTO_THUMBNAIL.",
-    "AUTO_THUMBNAIL": "Fetch a poster from TMDb as thumbnail when no other thumbnail exists. Default: False.",
     "LEECH_CAPTION": "Custom caption for leeched files. Supports HTML.",
     "LEECH_SUFFIX": "Suffix added to leeched file names.",
     "LEECH_FONT": "Font style for captions: b, i, u, s, code, spoiler.",
@@ -211,7 +179,6 @@ DEFAULT_DESP = {
     "STREAM_GATE": "Process-wide ceiling on concurrent GetFile calls. Default: 96.",
     "MEM_BUDGET": "Memory ceiling for transfer buffers in MB. 0 = auto (15% of the container limit).",
     "MEM_DEEP_STATS": "Add object counts to /memory. Costs a full GC scan per call. Default: False.",
-    "CPU_LIMIT": "CPU limit percentage for background services (SABnzbd, JDownloader). Default: 20.",
     "FFMPEG_CORES": "CPUs given to FFmpeg. auto = 60% of them, all/0 = every CPU, a count (5), a percentage (75%), or a taskset list (0-4). Services take the rest.",
     "THROTTLE_SERVICES": "Pause services during heavy ops (FFmpeg). auto=low-end only, always, never.",
     "HYDRA_IP": "Hydra API IP address for search.",
@@ -225,7 +192,6 @@ DEFAULT_DESP = {
     "SET_COMMANDS": "Auto-set bot commands on start. Default: True.",
     "STATUS_LIMIT": "Number of status messages to show. Default: 10.",
     "STATUS_UPDATE_INTERVAL": "Status message refresh interval in seconds. Default: 15.",
-    "STOP_DUPLICATE": "Stop if file/folder exists in GDrive. Default: False.",
     "STREAMWISH_API": "StreamWish API key for uploads.",
     "SUDO_USERS": "User IDs with sudo access. Space-separated.",
     "TELEGRAM_API": "Telegram API ID from my.telegram.org.",
@@ -251,7 +217,6 @@ DEFAULT_DESP = {
     "YT_DESP": "Description for YouTube uploads. Default: Uploaded with WZML-X bot.",
     "YT_TAGS": "Tags for YouTube uploads. List format.",
     "YT_CATEGORY_ID": "YouTube video category ID. Default: 22 (People & Blogs).",
-    "PLUGIN_INDEXES": "Extra plugin index URLs on top of the official one. Each must be a JSON file holding a plugins list.",
     "ENABLE_TELEMETRY": "Send crash reports to telemetry.wzmlx.com to help fix bugs. Default: True.",
     "YT_PRIVACY_STATUS": "YouTube upload privacy: public, unlisted, or private.",
 }
@@ -277,50 +242,28 @@ RESTART_VARS = {
 }
 
 ONOFF_VARS = [
-    "DISABLE_TORRENTS",
     "DISABLE_LEECH",
     "DISABLE_MIRROR",
     "DISABLE_BULK",
     "DISABLE_MULTI",
-    "DISABLE_SEED",
     "DISABLE_FF_MODE",
-    "DISABLE_MEGA",
-    "DISABLE_PLUGINS",
-    "DISABLE_JD",
-    "DISABLE_NZB",
-    "DISABLE_SEEDR",
-    "DISABLE_RSS",
-    "DISABLE_SEARCH",
     "DISABLE_STREAM",
     "DISABLE_YTDLP",
 ]
 
 LIMIT_VARS = [
     "DIRECT_LIMIT",
-    "MEGA_LIMIT",
-    "TORRENT_LIMIT",
-    "GD_DL_LIMIT",
-    "RC_DL_LIMIT",
-    "CLONE_LIMIT",
-    "JD_LIMIT",
-    "NZB_LIMIT",
-    "SEEDR_LIMIT",
     "YTDLP_LIMIT",
     "PLAYLIST_LIMIT",
     "LEECH_LIMIT",
     "EXTRACT_LIMIT",
     "ARCHIVE_LIMIT",
     "STORAGE_LIMIT",
-    "CPU_LIMIT",
-    "RSS_SIZE_LIMIT",
-    "SEARCH_LIMIT",
     "STATUS_LIMIT",
 ]
 
 LIMIT_UNITS = {
-    "CPU_LIMIT": "%",
     "PLAYLIST_LIMIT": " items",
-    "SEARCH_LIMIT": " results",
     "STATUS_LIMIT": " msgs",
 }
 
@@ -518,8 +461,6 @@ async def get_buttons(key=None, edit_type=None, edit_mode=False):
                                 ),
                                 InputRichBlockListItem(
                                     text=rich_text(
-                                        ("c", "CPU_LIMIT"),
-                                        " is a percentage, ",
                                         ("c", "STATUS_LIMIT"),
                                         " counts messages.",
                                     )
@@ -558,12 +499,6 @@ async def get_buttons(key=None, edit_type=None, edit_mode=False):
                 f"<code>{fn}</code> → <b>{'Exists' if await aiopath.isfile(fn) else 'Not Exists'}</b>"
                 for fn in [
                     "config.py",
-                    "token.pickle",
-                    "rclone.conf",
-                    "accounts.zip",
-                    "list_drives.txt",
-                    "shortener.txt",
-                    "categories.txt",
                     "cookies.txt",
                     "terabox.txt",
                     ".netrc",
@@ -573,11 +508,7 @@ async def get_buttons(key=None, edit_type=None, edit_mode=False):
         msg = f"""⌬ <b>Private File Settings</b>
 ┠ <b>Dashboard :</b> 
 ┃
-┠ {txt}
-┃
-┠ <b>Delete File</b> → Send the file name as text message, Like <code>rclone.conf</code>.
-┃
-┖ <b>Note:</b> Changing .netrc will not take effect for aria2c until restart."""
+┠ {txt}"""
         if edit_mode:
             msg += "\n\n<i>Send the file name to delete the file, file to save the file & for new file create, follow below format.</i> \n\n<b>Format:</b> \n<code>file_name\n\ncontents of file</code></i>\n┖ <b>Time Left :</b> <code>60 sec</code>"
     else:
@@ -610,27 +541,15 @@ async def edit_variable(_, message, pre_message, key):
                     value, update_status_message, cid
                 )
     elif key == "TORRENT_TIMEOUT":
-        await TorrentManager.change_aria2_option("bt-stop-timeout", value)
         value = int(value)
     elif key == "LEECH_SPLIT_SIZE":
         value = min(int(value), TgClient.MAX_SPLIT_SIZE)
     elif key == "EXCLUDED_EXTENSIONS":
         fx = value.split()
         excluded_extensions.clear()
-        excluded_extensions.extend(["aria2", "!qB"])
         for x in fx:
             x = x.lstrip(".")
             excluded_extensions.append(x.strip().lower())
-    elif key == "GDRIVE_ID":
-        if drives_names and drives_names[0] == "Main":
-            drives_ids[0] = value
-        else:
-            drives_ids.insert(0, value)
-    elif key == "INDEX_URL":
-        if drives_names and drives_names[0] == "Main":
-            index_urls[0] = value
-        else:
-            index_urls.insert(0, value)
     elif key == "LINKS_LOG_ID":
         if value.strip():
             try:
@@ -701,19 +620,6 @@ async def edit_variable(_, message, pre_message, key):
         value = str(value)
     elif key == "DEBRID_LINK_API":
         value = str(value)
-    elif key == "ALLDEBRID_API_KEY":
-        value = str(value)
-    elif key == "ALLDEBRID_NO_SEED_TIMEOUT":
-        try:
-            value = int(value)
-            if value < 0:
-                raise ValueError
-        except ValueError:
-            await send_message(
-                message,
-                "Invalid value! ALLDEBRID_NO_SEED_TIMEOUT must be 0 (no limit) or seconds.",
-            )
-            return await update_buttons(pre_message, "var")
     elif value.isdigit():
         value = int(value)
     elif value.startswith("[") and value.endswith("]"):
@@ -793,16 +699,6 @@ async def _handle_service_toggle(key, disabled):
         else:
             spawn_stream_server()
             LOGGER.info("Stream server started via Module Settings")
-    elif key == "DISABLE_PLUGINS":
-        from ..core.plugin_manager import get_plugin_manager
-
-        manager = get_plugin_manager()
-        if disabled:
-            await manager.unload_all()
-            LOGGER.info("Plugins unloaded via Module Settings")
-        else:
-            await manager.boot()
-            LOGGER.info("Plugins loaded via Module Settings")
 
 
 @new_task
@@ -875,48 +771,6 @@ async def update_private_file(_, message, pre_message, key, new_file=False):
             await send_message(message, msg, buttons.build_menu(2))
         else:
             await delete_message(message)
-    if file_name == "list_drives.txt" and await aiopath.exists("list_drives.txt"):
-        drives_ids.clear()
-        drives_names.clear()
-        index_urls.clear()
-        if Config.GDRIVE_ID:
-            drives_names.append("Main")
-            drives_ids.append(Config.GDRIVE_ID)
-            index_urls.append(Config.INDEX_URL)
-        async with aiopen("list_drives.txt", "r+") as f:
-            lines = await f.readlines()
-            for line in lines:
-                temp = line.strip().split()
-                drives_ids.append(temp[1])
-                drives_names.append(temp[0].replace("_", " "))
-                if len(temp) > 2:
-                    index_urls.append(temp[2])
-                else:
-                    index_urls.append("")
-    elif file_name == "shortener.txt" and await aiopath.exists("shortener.txt"):
-        async with aiopen("shortener.txt", "r+") as f:
-            lines = await f.readlines()
-            for line in lines:
-                temp = line.strip().split()
-                if len(temp) == 2:
-                    shortener_dict[temp[0]] = temp[1]
-    elif file_name == "categories.txt" and await aiopath.exists("categories.txt"):
-        categories_dict.clear()
-        if Config.GDRIVE_ID:
-            categories_dict["Root"] = {
-                "drive_id": Config.GDRIVE_ID,
-                "index_link": Config.INDEX_URL,
-            }
-        async with aiopen("categories.txt", "r+") as f:
-            lines = await f.readlines()
-            for line in lines:
-                sep = 2 if line.strip().split()[-1].startswith("http") else 1
-                temp = line.strip().rsplit(maxsplit=sep)
-                name = "Root Custom" if temp[0].casefold() == "Root" else temp[0]
-                categories_dict[name] = {
-                    "drive_id": temp[1],
-                    "index_link": (temp[2] if sep == 2 else ""),
-                }
     await update_buttons(pre_message, key)
     await database.update_private_file(file_name)
 
@@ -1004,22 +858,8 @@ async def edit_bot_settings(client, query):
                     intervals["status"][key] = SetInterval(
                         value, update_status_message, key
                     )
-        elif data[2] == "EXCLUDED_EXTENSIONS":
-            excluded_extensions.clear()
-            excluded_extensions.extend(["aria2", "!qB"])
-        elif data[2] == "TORRENT_TIMEOUT":
-            await TorrentManager.change_aria2_option("bt-stop-timeout", "0")
-            await database.update_aria2("bt-stop-timeout", "0")
         elif data[2] in ("BASE_URL", "WEB_ACCESS_PASSWORD"):
             await cmd_exec(["pkill", "-9", "-f", "gunicorn"])
-        elif data[2] == "GDRIVE_ID":
-            if drives_names and drives_names[0] == "Main":
-                drives_names.pop(0)
-                drives_ids.pop(0)
-                index_urls.pop(0)
-        elif data[2] == "INDEX_URL":
-            if drives_names and drives_names[0] == "Main":
-                index_urls[0] = ""
         elif data[2] in ("INC_TASK_NOTIFY", "INC_TASK_RESUME"):
             await database.trunc_table("tasks")
         elif data[2] == "AUTHORIZED_CHATS":
@@ -1071,23 +911,6 @@ async def edit_bot_settings(client, query):
     elif data[1] == "showvar":
         key = data[2]
         await show_var_value(client, query, key)
-    elif data[1] == "ariavar" and (state == "edit" or data[2] == "newkey"):
-        await query.answer()
-        await update_buttons(message, data[2], data[1])
-        pfunc = partial(edit_aria, pre_message=message, key=data[2])
-        rfunc = partial(update_buttons, message, "aria")
-        await event_handler(client, query, pfunc, rfunc)
-    elif data[1] == "ariavar" and state == "view":
-        value = f"{aria2_options[data[2]]}"
-        if len(value) > 200:
-            await query.answer()
-            with BytesIO(str.encode(value)) as out_file:
-                out_file.name = f"{data[2]}.txt"
-                await send_file(message, out_file)
-            return
-        elif value == "":
-            value = None
-        await query.answer(f"{value}", show_alert=True)
     elif data[1] == "edit":
         await query.answer()
         globals()["state"] = "edit"

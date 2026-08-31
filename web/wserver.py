@@ -197,43 +197,6 @@ def _client_ip(request: Request):
     return (request.client.host if request.client else "unknown")[:64]
 
 
-async def re_verify(paused, resumed, hash_id):
-    k = 0
-    while True:
-        res = await qbittorrent.torrents.files(hash_id)
-        verify = True
-        for i in res:
-            if i.index in paused and i.priority != 0:
-                verify = False
-                break
-            if i.index in resumed and i.priority == 0:
-                verify = False
-                break
-        if verify:
-            break
-        LOGGER.info("Reverification Failed! Correcting stuff...")
-        await sleep(0.5)
-        if paused:
-            try:
-                await qbittorrent.torrents.file_prio(
-                    hash=hash_id, id=paused, priority=0
-                )
-            except (ClientError, TimeoutError, Exception, AQError) as e:
-                LOGGER.error(f"{e} Errored in reverification paused!")
-        if resumed:
-            try:
-                await qbittorrent.torrents.file_prio(
-                    hash=hash_id, id=resumed, priority=1
-                )
-            except (ClientError, TimeoutError, Exception, AQError) as e:
-                LOGGER.error(f"{e} Errored in reverification resumed!")
-        k += 1
-        if k > 5:
-            return False
-    LOGGER.info(f"Verified! Hash: {hash_id}")
-    return True
-
-
 @app.get("/app/files", response_class=HTMLResponse)
 async def files(request: Request):
     response = templates.TemplateResponse(request, "page.html")
@@ -241,91 +204,6 @@ async def files(request: Request):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
-
-
-@app.api_route(
-    "/app/files/torrent", methods=["GET", "POST"], response_class=HTMLResponse
-)
-async def handle_torrent(request: Request):
-    params = request.query_params
-
-    if not (gid := params.get("gid")):
-        return JSONResponse(
-            {
-                "files": [],
-                "engine": "",
-                "error": "GID is missing",
-                "message": "GID not specified",
-            }
-        )
-
-    if not _SAFE_GID.match(gid):
-        return JSONResponse(
-            {
-                "files": [],
-                "engine": "",
-                "error": "Invalid GID",
-                "message": "Invalid GID",
-            }
-        )
-
-    if not (pin := params.get("pin")):
-        return JSONResponse(
-            {
-                "files": [],
-                "engine": "",
-                "error": "Pin is missing",
-                "message": "PIN not specified",
-            }
-        )
-
-    if _pin_rate_limited(gid):
-        return JSONResponse(
-            {
-                "files": [],
-                "engine": "",
-                "error": "Too many attempts",
-                "message": f"Too many PIN attempts. Try again in {_PIN_RATE_WINDOW}s.",
-            },
-            status_code=429,
-        )
-
-    if not _verify_pin(gid, pin):
-        _record_pin_attempt(gid)
-        return JSONResponse(
-            {
-                "files": [],
-                "engine": "",
-                "error": "Invalid pin",
-                "message": "The PIN you entered is incorrect. Try Again!",
-            }
-        )
-    _pin_attempts.pop(gid, None)
-
-    if request.method == "POST":
-        if not (mode := params.get("mode")):
-            return JSONResponse(
-                {
-                    "files": [],
-                    "engine": "",
-                    "error": "Mode is not specified",
-                    "message": "Mode is not specified",
-                }
-            )
-        content = {
-            "files": [],
-            "engine": "",
-            "error": "Torrent selection disabled",
-            "message": "Torrent selection disabled",
-        }
-    else:
-        content = {
-            "files": [],
-            "engine": "",
-            "error": "Torrent selection disabled",
-            "message": "Torrent selection disabled",
-        }
-    return JSONResponse(content)
 
 
 @app.get("/", response_class=HTMLResponse)

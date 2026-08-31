@@ -38,7 +38,6 @@ from ..ext_utils.files_utils import (
     remove_excluded_files,
     move_and_merge,
 )
-from ..ext_utils.links_utils import is_gdrive_id
 from ..ext_utils.status_utils import get_readable_file_size, get_readable_time
 from ..ext_utils.task_manager import check_running_tasks, start_from_queued
 from ..mirror_leech_utils.uphoster_utils.multi_upload import MultiUphosterUpload
@@ -177,9 +176,6 @@ class TaskListener(TaskConfig):
             self.name = download.name()
             gid = download.gid()
         LOGGER.info(f"Download completed: {self.name}")
-
-        if not (self.is_torrent or self.is_qbit):
-            self.seed = False
 
         if multi_links:
             self.seed = False
@@ -502,11 +498,7 @@ class TaskListener(TaskConfig):
             ):
                 buttons = ButtonMaker()
                 if link and Config.SHOW_CLOUD_LINK:
-                    if "mega.nz" in link:
-                        btn_label = "🔗 Mega Link"
-                    else:
-                        btn_label = "☁️ Cloud Link"
-                    buttons.url_button(btn_label, link, style=ButtonStyle.PRIMARY)
+                    buttons.url_button("☁️ Cloud Link", link, style=ButtonStyle.PRIMARY)
                 elif multi_links:
                     for name, url in multi_links:
                         buttons.url_button(name, url)
@@ -582,13 +574,6 @@ class TaskListener(TaskConfig):
                 del task_dict[self.mid]
             count = len(task_dict)
         await self.remove_from_same_dir()
-        if magnet_id := getattr(self, "_alldebrid_magnet_id", 0) or 0:
-            from ..mirror_leech_utils.download_utils.alldebrid_resolver import (
-                delete_magnet,
-            )
-
-            await delete_magnet(magnet_id)
-            self._alldebrid_magnet_id = 0
         msg = (
             f"""〶 <b><i><u>Limit Breached:</u></i></b>
 │
