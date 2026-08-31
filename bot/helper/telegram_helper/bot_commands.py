@@ -7,7 +7,6 @@ class BotCommands:
     LoginCommand = "login"
 
     _static_commands = {
-        "Mirror": ["mirror", "m"],
         "Ytdl": ["ytdl", "y"],
         "UpHoster": ["uphoster", "up"],
         "Leech": ["leech", "l"],
@@ -40,7 +39,6 @@ class BotCommands:
         "BotSet": ["bsetting", "bs"],
         "UserSet": ["usetting", "us"],
         "Select": ["select", "sel"],
-        "CategorySelect": ["category", "ctsel"],
         "Plugins": "plugins",
         "Memory": ["memory", "mem"],
     }

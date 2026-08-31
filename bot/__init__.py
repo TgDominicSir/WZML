@@ -53,9 +53,6 @@ queued_dl = {}
 queued_up = {}
 status_dict = {}
 task_dict = {}
-shortener_dict = {}
-categories_dict = {}
-list_drives_dict = {}
 var_list = [
     "BOT_TOKEN",
     "TELEGRAM_API",
@@ -68,16 +65,12 @@ var_list = [
 ]
 auth_chats = {}
 excluded_extensions = []
-drives_names = []
-drives_ids = []
-index_urls = []
 sudo_users = []
 non_queued_dl = set()
 non_queued_up = set()
 multi_tags = set()
 task_dict_lock = Lock()
 queue_dict_lock = Lock()
-same_directory_lock = Lock()
 
 
 if not Config.WEB_ACCESS_PASSWORD:

@@ -153,13 +153,6 @@ async def add_handlers():
     TgClient.bot.add_handler(CallbackQueryHandler(arg_usage, filters=regex("^help")))
     TgClient.bot.add_handler(
         MessageHandler(
-            mirror,
-            filters=command(BotCommands.MirrorCommand, case_sensitive=True)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
             leech,
             filters=command(BotCommands.LeechCommand, case_sensitive=True)
             & CustomFilters.authorized,
@@ -311,16 +304,6 @@ async def add_handlers():
             filters=command(BotCommands.YtdlLeechCommand, case_sensitive=True)
             & CustomFilters.authorized,
         )
-    )
-    TgClient.bot.add_handler(
-        MessageHandler(
-            change_category,
-            filters=command(BotCommands.CategorySelectCommand)
-            & CustomFilters.authorized,
-        )
-    )
-    TgClient.bot.add_handler(
-        CallbackQueryHandler(confirm_category, filters=regex("^scat"))
     )
     TgClient.bot.add_handler(
         CallbackQueryHandler(confirm_dump_chat, filters=regex("^sdump"))

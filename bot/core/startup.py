@@ -11,12 +11,6 @@ from .. import (
     LOGGER,
     bot_loop,
     auth_chats,
-    categories_dict,
-    drives_ids,
-    drives_names,
-    index_urls,
-    list_drives_dict,
-    shortener_dict,
     var_list,
     user_data,
     excluded_extensions,
@@ -117,7 +111,6 @@ async def load_settings():
                 del row["_id"]
                 paths = {
                     "THUMBNAIL": f"thumbnails/{uid}.jpg",
-                    "TOKEN_PICKLE": f"tokens/{uid}.pickle",
                     "USER_COOKIE_FILE": f"cookies/{uid}/cookies.txt",
                 }
 
@@ -188,58 +181,6 @@ async def update_variables():
             x = x.lstrip(".")
             excluded_extensions.append(x.strip().lower())
 
-    if Config.GDRIVE_ID:
-        drives_names.append("Main")
-        drives_ids.append(Config.GDRIVE_ID)
-        index_urls.append(Config.INDEX_URL)
-        list_drives_dict["Main"] = {
-            "drive_id": Config.GDRIVE_ID,
-            "index_link": Config.INDEX_URL,
-        }
-        categories_dict["Root"] = {
-            "drive_id": Config.GDRIVE_ID,
-            "index_link": Config.INDEX_URL,
-        }
-
-    if await aiopath.exists("list_drives.txt"):
-        async with aiopen("list_drives.txt", "r+") as f:
-            lines = await f.readlines()
-            for line in lines:
-                temp = line.split()
-                drives_ids.append(temp[1])
-                drives_names.append(temp[0].replace("_", " "))
-                if len(temp) > 2:
-                    index_urls.append(temp[2])
-                else:
-                    index_urls.append("")
-
-                sep = 2 if temp[-1].startswith("http") else 1
-                tmp = line.strip().rsplit(maxsplit=sep)
-                name = "Main Custom" if tmp[0].casefold() == "Main" else tmp[0]
-                list_drives_dict[name] = {
-                    "drive_id": tmp[1],
-                    "index_link": (tmp[2] if sep == 2 else ""),
-                }
-
-    if await aiopath.exists("shortener.txt"):
-        async with aiopen("shortener.txt", "r+") as f:
-            lines = await f.readlines()
-            for line in lines:
-                temp = line.strip().split()
-                if len(temp) == 2:
-                    shortener_dict[temp[0]] = temp[1]
-
-    if await aiopath.exists("categories.txt"):
-        async with aiopen("categories.txt", "r+") as f:
-            lines = await f.readlines()
-            for line in lines:
-                sep = 2 if line.strip().split()[-1].startswith("http") else 1
-                temp = line.strip().rsplit(maxsplit=sep)
-                name = "Root Custom" if temp[0].casefold() == "Root" else temp[0]
-                categories_dict[name] = {
-                    "drive_id": temp[1],
-                    "index_link": (temp[2] if sep == 2 else ""),
-                }
 
 
 async def load_configurations():
@@ -247,15 +188,6 @@ async def load_configurations():
         async with aiopen(".netrc", "w"):
             pass
 
-    if await aiopath.exists("accounts.zip"):
-        if await aiopath.exists("accounts"):
-            await rmtree("accounts", ignore_errors=True)
-        await cmd_exec(["7z", "x", "-o.", "-aoa", "accounts.zip", "accounts/*.json"])
-        await cmd_exec(["chmod", "-R", "777", "accounts"])
-        await remove("accounts.zip")
-
-    if not await aiopath.exists("accounts"):
-        Config.USE_SERVICE_ACCOUNTS = False
 
     PORT = getenv("PORT", "") or "8080"
     if PORT:

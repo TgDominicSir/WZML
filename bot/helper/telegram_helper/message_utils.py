@@ -29,7 +29,6 @@ except ImportError:
 from ... import (
     LOGGER,
     bot_cache,
-    categories_dict,
     intervals,
     status_dict,
     task_dict_lock,
@@ -37,7 +36,9 @@ from ... import (
 )
 from ...core.config_manager import Config
 from ...core.tg_client import TgClient
-from ..ext_utils.bot_utils import SetInterval, download_image_url, fetch_drive_cat
+from ..ext_utils.bot_utils import SetInterval, download_image_url, new_task
+from .filters import CustomFilters
+from ..ext_utils.status_utils import get_readable_time
 from ..ext_utils.exceptions import TgLinkException
 from ..ext_utils.status_utils import get_readable_message
 from .button_build import ButtonMaker
@@ -490,105 +491,55 @@ async def send_status_message(msg, user_id=0):
             )
 
 
-async def open_category_btns(message):
-    user_id = message.from_user.id
-    msg_id = message.id
+@new_task
+async def confirm_dump_chat(client, query):
+    user_id = query.from_user.id
+    data = query.data.split(maxsplit=3)
+    msg_id = int(data[2])
+    cache_key = f"sdump_{msg_id}"
+    if cache_key not in bot_cache:
+        return await edit_message(query.message, "<b>Old Task</b>")
+    elif user_id != int(data[1]) and not await CustomFilters.sudo("", query):
+        return await query.answer(text="This task is not for you!", show_alert=True)
+    elif data[3] == "sdone":
+        bot_cache[cache_key][1] = True
+        return
+    elif data[3] == "scancel":
+        bot_cache[cache_key][2] = True
+        return
+    dump_chats = Config.LEECH_DUMP_CHATS or {}
+    dump_names = list(dump_chats)
+    try:
+        dump_name = dump_names[int(data[3])]
+    except (ValueError, IndexError):
+        return await query.answer(text="Unknown dump chat!", show_alert=True)
+    await query.answer()
+    bot_cache[cache_key][0] = dump_chats[dump_name]
     buttons = ButtonMaker()
-    cat_name = None
-    dcats = fetch_drive_cat(user_id)
-    default_id = user_data.get(user_id, {}).get("GDRIVE_ID") or Config.GDRIVE_ID
-    default_index = user_data.get(user_id, {}).get("INDEX_URL") or Config.INDEX_URL
-    merged = {
-        "Default": {"drive_id": default_id, "index_link": default_index},
-        **dcats,
-        **categories_dict,
-    }
-    for i, name in enumerate(merged):
-        if i == 0:
-            cat_name = name
+    for i, name in enumerate(dump_names):
         buttons.data_button(
-            f"{'✓️' if i == 0 else ''} {name}",
-            f"scat {user_id} {msg_id} {name.replace(' ', '_')}",
-        )
-    buttons.data_button(
-        "Cancel", f"scat {user_id} {msg_id} scancel", "footer", style=ButtonStyle.DANGER
-    )
-    buttons.data_button(
-        "Done (60)",
-        f"scat {user_id} {msg_id} sdone",
-        "footer",
-        style=ButtonStyle.SUCCESS,
-    )
-    prompt = await send_message(
-        message,
-        f"<b>Select the category where you want to upload</b>\n\n"
-        f"<i><b>Upload Category:</b></i> <code>{cat_name or 'None'}</code>\n\n"
-        f"<b>Timeout:</b> 60 sec",
-        buttons.build_menu(3),
-    )
-    start_time = time()
-    bot_cache[msg_id] = [None, None, False, False, start_time]
-    while time() - start_time <= 60:
-        await sleep(0.5)
-        if bot_cache[msg_id][2] or bot_cache[msg_id][3]:
-            break
-    drive_id, index_link, _, is_cancelled, __ = bot_cache[msg_id]
-    if not is_cancelled:
-        await delete_message(prompt)
-    else:
-        await edit_message(prompt, "<b>Task Cancelled</b>")
-    del bot_cache[msg_id]
-    return drive_id, index_link, is_cancelled
-
-
-async def open_drive_clean(message):
-    user_id = message.from_user.id
-    msg_id = message.id
-    buttons = ButtonMaker()
-    dcats = fetch_drive_cat(user_id)
-    default_id = user_data.get(user_id, {}).get("GDRIVE_ID") or Config.GDRIVE_ID
-    default_index = user_data.get(user_id, {}).get("INDEX_URL") or Config.INDEX_URL
-    merged = {
-        "Default": {"drive_id": default_id, "index_link": default_index},
-        **dcats,
-        **categories_dict,
-    }
-    first_cat = None
-    for i, name in enumerate(merged):
-        if i == 0:
-            first_cat = name
-        buttons.data_button(
-            f"{'✓️' if i == 0 else ''} {name}",
-            f"gdccat {user_id} {msg_id} {name.replace(' ', '_')}",
+            f"{'✓️' if dump_name == name else ''} {name}",
+            f"sdump {user_id} {msg_id} {i}",
         )
     buttons.data_button(
         "Cancel",
-        f"gdccat {user_id} {msg_id} ccancel",
-        position="footer",
+        f"sdump {user_id} {msg_id} scancel",
+        "footer",
         style=ButtonStyle.DANGER,
     )
-    prompt = await send_message(
-        message,
-        f"<b>Select Drive Category to Clean</b>\n\n"
-        f"<b>Category:</b> <code>{first_cat or 'None'}</code>\n\n"
+    buttons.data_button(
+        f"Done ({get_readable_time(60 - (time() - bot_cache[cache_key][3]))})",
+        f"sdump {user_id} {msg_id} sdone",
+        "footer",
+        style=ButtonStyle.SUCCESS,
+    )
+    await edit_message(
+        query.message,
+        f"<b>Select the dump chat for this task</b>\n\n"
+        f"<i><b>Dump Chat:</b></i> <code>{dump_name}</code>\n\n"
         f"<b>Timeout:</b> 60 sec",
         buttons.build_menu(3),
     )
-    start_time = time()
-    bot_cache[msg_id] = [None, False, False, start_time, None]
-    while time() - start_time <= 60:
-        await sleep(0.5)
-        if bot_cache[msg_id][1] or bot_cache[msg_id][2]:
-            break
-    drive_id = bot_cache[msg_id][0]
-    is_cancelled = bot_cache[msg_id][1]
-    cat_name = bot_cache[msg_id][4]
-    if not is_cancelled:
-        await delete_message(prompt)
-    else:
-        await edit_message(prompt, "<b>Task Cancelled</b>")
-    del bot_cache[msg_id]
-    return drive_id, is_cancelled, cat_name
 
 
 async def open_dump_chat_btns(message, dump_chats, invalid_name=None):

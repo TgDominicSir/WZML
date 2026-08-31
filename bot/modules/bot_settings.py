@@ -33,14 +33,9 @@ from pyrogram.handlers import MessageHandler
 from .. import (
     LOGGER,
     bot_loop,
-    categories_dict,
-    drives_ids,
-    drives_names,
-    index_urls,
     intervals,
     scheduler,
     task_dict,
-    shortener_dict,
     excluded_extensions,
     auth_chats,
     sudo_users,
@@ -789,46 +784,7 @@ async def toggle_onoff_var(_, query, pre_message, key, value):
 
 
 async def _handle_service_toggle(key, disabled):
-    if key == "DISABLE_JD":
-        if disabled:
-            if jdownloader.is_connected:
-                try:
-                    await jdownloader.device.downloadcontroller.stop_downloads()
-                    await jdownloader.close()
-                except Exception:
-                    pass
-                try:
-                    await cmd_exec(["pkill", "-9", "-f", "java"])
-                except Exception:
-                    pass
-                LOGGER.info("JDownloader stopped via Module Settings")
-        else:
-            try:
-                from ..core.startup import load_configurations
-
-                await load_configurations()
-            except Exception:
-                pass
-            bot_loop.create_task(jdownloader.boot())
-            LOGGER.info("JDownloader starting via Module Settings")
-    elif key == "DISABLE_NZB":
-        if disabled:
-            if sabnzbd_client.LOGGED_IN:
-                try:
-                    await gather(
-                        sabnzbd_client.pause_all(),
-                        sabnzbd_client.close(),
-                    )
-                except Exception:
-                    pass
-                try:
-                    await cmd_exec(["pkill", "-9", "-f", "SABnzbd"])
-                except Exception:
-                    pass
-                LOGGER.info("SABnzbd stopped via Module Settings")
-        else:
-            LOGGER.info("SABnzbd requires restart to re-enable")
-    elif key == "DISABLE_STREAM":
+    if key == "DISABLE_STREAM":
         from ..core.stream_server import spawn_stream_server, stop_stream_server
 
         if disabled:
@@ -1077,25 +1033,6 @@ async def edit_bot_settings(client, query):
         await database.update_config({data[2]: value})
         if data[2] in ("QUEUE_ALL", "QUEUE_DOWNLOAD", "QUEUE_UPLOAD"):
             await start_from_queued()
-    elif data[1] == "syncqbit":
-        await query.answer(
-            "Synchronization Started. It takes up to 2 sec!", show_alert=True
-        )
-        qbit_options.clear()
-        await update_qb_options()
-        await database.save_qbit_settings()
-    elif data[1] == "emptyaria":
-        await query.answer()
-        aria2_options[data[2]] = ""
-        await update_buttons(message, "aria")
-        await TorrentManager.change_aria2_option(data[2], "")
-        await database.update_aria2(data[2], "")
-    elif data[1] == "emptyqbit":
-        await query.answer()
-        await TorrentManager.qbittorrent.app.set_preferences({data[2]: ""})
-        qbit_options[data[2]] = ""
-        await update_buttons(message, "qbit")
-        await database.update_qbittorrent(data[2], "")
     elif data[1] == "private":
         await query.answer()
         if data[2] in ("open", "stop"):

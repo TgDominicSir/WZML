@@ -112,7 +112,7 @@ class DbManager:
             return
         data = user_data.get(user_id, {})
         data = data.copy()
-        for key in ("THUMBNAIL", "TOKEN_PICKLE", "USER_COOKIE_FILE"):
+        for key in ("THUMBNAIL", "USER_COOKIE_FILE"):
             data.pop(key, None)
         pipeline = [
             {
@@ -130,7 +130,6 @@ class DbManager:
                                                 "$$field.k",
                                                 [
                                                     "THUMBNAIL",
-                                                    "TOKEN_PICKLE",
                                                     "USER_COOKIE_FILE",
                                                 ],
                                             ]

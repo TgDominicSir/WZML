@@ -14,7 +14,6 @@ from pyrogram.enums import ChatAction, ChatType
 from .. import (
     DOWNLOAD_DIR,
     LOGGER,
-    categories_dict,
     excluded_extensions,
     intervals,
     multi_tags,
@@ -27,7 +26,6 @@ from ..core.cpu import ffmpeg_layout
 from ..core.tg_client import TgClient
 from ..helper.ext_utils.bot_lock import ff_lock
 from .ext_utils.bot_utils import (
-    fetch_drive_cat,
     get_size_bytes,
     new_task,
     parse_dest,
@@ -35,19 +33,11 @@ from .ext_utils.bot_utils import (
 )
 from .ext_utils.bulk_links import extract_bulk_links
 from .ext_utils.files_utils import (
-    SevenZ,
-    get_base_name,
     get_path_size,
-    is_archive,
-    is_archive_split,
-    is_first_archive_split,
     split_file,
 )
 from .ext_utils.links_utils import (
-    is_gdrive_id,
-    is_gdrive_link,
     is_telegram_link,
-    is_mega_link,
 )
 from .ext_utils.media_utils import (
     FFMpeg,
@@ -57,13 +47,10 @@ from .ext_utils.media_utils import (
     take_ss,
 )
 from .ext_utils.metadata_utils import MetadataProcessor
-from .mirror_leech_utils.gdrive_utils.list import GoogleDriveList
 from .mirror_leech_utils.status_utils.ffmpeg_status import FFmpegStatus
-from .mirror_leech_utils.status_utils.sevenz_status import SevenZStatus
 from .telegram_helper.bot_commands import BotCommands
 from .telegram_helper.message_utils import (
     get_tg_link_message,
-    open_category_btns,
     open_dump_chat_btns,
     send_message,
     send_status_message,
@@ -93,18 +80,14 @@ class TaskConfig:
         self.up_dir = ""
         self.link = ""
         self.up_dest = ""
-        self.drive_id = ""
         self.leech_dest = ""
         self.cmd_up_dest = ""
         self.cmd_thread_id = None
         self.leech_thread_id = None
         self.dump_dest = ""
-        self.rc_flags = ""
         self.tag = ""
         self.name = ""
         self.subname = ""
-        self.category = ""
-        self.index_link = ""
         self.name_swap = ""
         self.thumbnail_layout = ""
         self.folder_name = ""
@@ -116,25 +99,12 @@ class TaskConfig:
         self.proceed_count = 0
         self.is_leech = False
         self.is_yt = False
-        self.is_qbit = False
-        self.is_mega = False
-        self.is_seedr = False
-        self.is_clone = False
         self.is_uphoster = False
-        self.is_gdrive = False
         self.is_ytdlp = False
-        self.is_alldebrid = False
-        self._alldebrid_magnet_id = 0
         self.equal_splits = False
         self.transmission_mode = "bot"
-        self.extract = False
-        self.compress = False
         self.select = False
         self.files_selected = False
-        self.seed = False
-        self.join = False
-        self.private_link = False
-        self.stop_duplicate = False
         self.sample_video = False
         self.convert_audio = False
         self.convert_video = False
@@ -143,7 +113,6 @@ class TaskConfig:
         self.force_run = False
         self.force_download = False
         self.force_upload = False
-        self.is_torrent = False
         self.as_med = False
         self.as_doc = False
         self.is_file = False
@@ -182,38 +151,15 @@ class TaskConfig:
             )
         )
 
-        out_mode = f"#{'Leech' if self.is_leech else 'UphosterUpload' if self.is_uphoster else 'Clone' if self.is_clone else 'Mega' if self.up_dest in ('mega', 'mega:') else 'GDrive' if self.up_dest.startswith(('mtp:', 'tp:', 'sa:')) or is_gdrive_id(self.up_dest) else 'UpHosters'}"
-        out_mode += " (Zip)" if self.compress else " (Unzip)" if self.extract else ""
-
-        self.is_gdrive = is_gdrive_link(self.source_url) if self.source_url else False
-        self.is_mega = is_mega_link(self.link) if self.source_url else False
-
-        in_mode = f"#{'Seedr' if self.is_seedr else 'Mega' if self.is_mega else 'qBit' if self.is_qbit else 'ytdlp' if self.is_ytdlp else 'GDrive' if (self.is_clone or self.is_gdrive) else 'Aria2' if (self.source_url and self.source_url != self.message.link) else 'TgMedia'}"
-
+        out_mode = f"#{'Leech' if self.is_leech else 'UphosterUpload' if self.is_uphoster else 'UpHosters'}"
+        in_mode = f"#{'ytdlp' if self.is_ytdlp else 'Direct' if (self.source_url and self.source_url != self.message.link) else 'TgMedia'}"
         self.mode = (in_mode, out_mode)
 
     def get_token_path(self, dest):
-        if dest.startswith("mtp:"):
-            return f"tokens/{self.user_id}.pickle"
-        elif dest.startswith("sa:") or (
-            Config.USE_SERVICE_ACCOUNTS and not dest.startswith("tp:")
-        ):
-            return "accounts"
-        else:
-            return "token.pickle"
+        return ""
 
     async def is_token_exists(self, path, status):
-        if (
-            status == "dl"
-            and is_gdrive_link(path)
-            or status == "up"
-            and is_gdrive_id(path)
-        ):
-            token_path = self.get_token_path(path)
-            if token_path.startswith("tokens/") and status == "up":
-                self.private_link = True
-            if not await aiopath.exists(token_path):
-                raise ValueError(f"NO TOKEN! {token_path} not Exists!")
+        pass
 
     async def before_start(self):
         self.name_swap = (
@@ -226,20 +172,8 @@ class TaskConfig:
         self.excluded_extensions = self.user_dict.get("EXCLUDED_EXTENSIONS") or (
             excluded_extensions
             if "EXCLUDED_EXTENSIONS" not in self.user_dict
-            else ["aria2", "!qB"]
+            else []
         )
-        if self.link not in ["gdl"]:
-            if is_gdrive_link(self.link):
-                if not self.link.startswith(
-                    ("mtp:", "tp:", "sa:")
-                ) and self.user_dict.get("USER_TOKENS", False):
-                    self.link = f"mtp:{self.link}"
-                await self.is_token_exists(self.link, "dl")
-        elif self.link == "gdl":
-            if not self.is_ytdlp:
-                self.link = await GoogleDriveList(self).get_target_id("gdd")
-                if not is_gdrive_id(self.link):
-                    raise ValueError(self.link)
 
         self.transmission_mode = Config.TRANSMISSION_MODE
 
@@ -249,43 +183,6 @@ class TaskConfig:
         elif "UPLOAD_PATHS" not in self.user_dict and Config.UPLOAD_PATHS:
             if self.up_dest in Config.UPLOAD_PATHS:
                 self.up_dest = Config.UPLOAD_PATHS[self.up_dest]
-
-        if self.category and not self.is_leech:
-            dcats = fetch_drive_cat(self.user_id)
-            default_id = self.user_dict.get("GDRIVE_ID") or Config.GDRIVE_ID
-            default_index = self.user_dict.get("INDEX_URL") or Config.INDEX_URL
-            merged_cats = {
-                "Default": {"drive_id": default_id, "index_link": default_index},
-                **dcats,
-                **categories_dict,
-            }
-            if self.category == "gdl":
-                self.up_dest = "gdl"
-            elif self.category == "gd":
-                self.up_dest = default_id
-                self.index_link = default_index
-            elif "|" in self.category:
-                parts = self.category.split("|", 1)
-                self.up_dest = parts[0]
-                self.index_link = parts[1] if len(parts) > 1 else ""
-            elif is_gdrive_id(self.category):
-                self.up_dest = self.category
-            elif self.category in merged_cats:
-                self.up_dest = merged_cats[self.category]["drive_id"]
-                self.index_link = merged_cats[self.category].get("index_link", "")
-            else:
-                drive_id, index_link, is_cancelled = await open_category_btns(
-                    self.message
-                )
-                if is_cancelled:
-                    self.is_cancelled = True
-                    return
-                if drive_id:
-                    self.up_dest = drive_id
-                    self.index_link = index_link or ""
-            gc_used = True
-        else:
-            gc_used = False
 
         if self.ffmpeg_cmds and not isinstance(self.ffmpeg_cmds, list):
             if self.user_dict.get("FFMPEG_CMDS", None):
@@ -316,99 +213,31 @@ class TaskConfig:
         self.metadata_title = self.user_dict.get("METADATA")
 
         if not self.is_leech:
-            self.stop_duplicate = (
-                self.user_dict.get("STOP_DUPLICATE")
-                or "STOP_DUPLICATE" not in self.user_dict
-                and Config.STOP_DUPLICATE
-            )
-            if not gc_used:
-                default_upload = (
-                    self.user_dict.get("DEFAULT_UPLOAD", "") or Config.DEFAULT_UPLOAD
-                )
-                if not self.is_uphoster and (
-                    (not self.up_dest and default_upload == "rc")
-                    or self.up_dest == "rc"
-                ):
-                    self.up_dest = (
-                        self.user_dict.get("RCLONE_PATH") or Config.RCLONE_PATH
-                    )
-                elif not self.is_uphoster and (
-                    (not self.up_dest and default_upload == "gd")
-                    or self.up_dest == "gd"
-                ):
-                    self.up_dest = self.user_dict.get("GDRIVE_ID") or Config.GDRIVE_ID
-                elif not self.is_uphoster and (
-                    (not self.up_dest and default_upload == "mega")
-                    or self.up_dest == "mega"
-                ):
-                    self.up_dest = "mega:"
-
-                if self.is_uphoster and not self.up_dest:
-                    uphoster_service = self.user_dict.get("UPHOSTER_SERVICE", "gofile")
-                    services = uphoster_service.split(",")
-                    for service in services:
-                        if service == "gofile":
-                            if not (
-                                self.user_dict.get("GOFILE_TOKEN") or Config.GOFILE_API
-                            ):
-                                raise ValueError("No Gofile Token Found!")
-                        elif service == "buzzheavier":
-                            if not (
-                                self.user_dict.get("BUZZHEAVIER_TOKEN")
-                                or Config.BUZZHEAVIER_API
-                            ):
-                                raise ValueError("No BuzzHeavier Token Found!")
-                        elif service == "pixeldrain":
-                            if not (
-                                self.user_dict.get("PIXELDRAIN_KEY")
-                                or Config.PIXELDRAIN_KEY
-                            ):
-                                raise ValueError("No PixelDrain Key Found!")
-                    self.up_dest = "Uphoster"
+            if self.is_uphoster and not self.up_dest:
+                uphoster_service = self.user_dict.get("UPHOSTER_SERVICE", "gofile")
+                services = uphoster_service.split(",")
+                for service in services:
+                    if service == "gofile":
+                        if not (
+                            self.user_dict.get("GOFILE_TOKEN") or Config.GOFILE_API
+                        ):
+                            raise ValueError("No Gofile Token Found!")
+                    elif service == "buzzheavier":
+                        if not (
+                            self.user_dict.get("BUZZHEAVIER_TOKEN")
+                            or Config.BUZZHEAVIER_API
+                        ):
+                            raise ValueError("No BuzzHeavier Token Found!")
+                    elif service == "pixeldrain":
+                        if not (
+                            self.user_dict.get("PIXELDRAIN_KEY")
+                            or Config.PIXELDRAIN_KEY
+                        ):
+                            raise ValueError("No PixelDrain Key Found!")
+                self.up_dest = "Uphoster"
 
             if not self.up_dest:
                 raise ValueError("No Upload Destination!")
-
-            if self.up_dest in ("gdl",):
-                pass
-            elif is_gdrive_id(self.up_dest):
-                if not self.up_dest.startswith(
-                    ("mtp:", "tp:", "sa:")
-                ) and self.user_dict.get("USER_TOKENS", False):
-                    self.up_dest = f"mtp:{self.up_dest}"
-            elif self.up_dest == "mega:":
-                pass
-            elif self.is_uphoster:
-                pass
-            else:
-                raise ValueError("Wrong Upload Destination!")
-
-            if (
-                self.up_dest not in ["gdl"]
-                and not self.is_uphoster
-                and self.up_dest != "mega:"
-            ):
-                await self.is_token_exists(self.up_dest, "up")
-
-            if self.up_dest == "gdl":
-                if self.is_clone:
-                    if not is_gdrive_link(self.link):
-                        raise ValueError(
-                            "You can't clone from different types of tools"
-                        )
-                    token_path = self.get_token_path(self.link)
-                else:
-                    token_path = None
-                self.up_dest = await GoogleDriveList(self).get_target_id(
-                    "gdu", token_path
-                )
-                if not is_gdrive_id(self.up_dest):
-                    raise ValueError(self.up_dest)
-            elif self.is_clone:
-                if is_gdrive_link(self.link) and self.get_token_path(
-                    self.link
-                ) != self.get_token_path(self.up_dest):
-                    raise ValueError("You must use the same token to clone!")
         else:
             self.leech_dest, self.leech_thread_id = parse_dest(
                 self.user_dict.get("LEECH_DUMP_CHAT")
@@ -666,13 +495,8 @@ class TaskConfig:
         await obj(
             client=self.client,
             message=nextmsg,
-            is_qbit=self.is_qbit,
             is_leech=self.is_leech,
-            is_jd=self.is_jd,
-            is_nzb=self.is_nzb,
-            is_seedr=self.is_seedr,
             is_uphoster=self.is_uphoster,
-            same_dir=self.same_dir,
             bulk=self.bulk,
             multi_tag=self.multi_tag,
             options=self.options,
@@ -713,13 +537,8 @@ class TaskConfig:
             await obj(
                 client=self.client,
                 message=nextmsg,
-                is_qbit=self.is_qbit,
                 is_leech=self.is_leech,
-                is_jd=self.is_jd,
-                is_nzb=self.is_nzb,
-                is_seedr=self.is_seedr,
                 is_uphoster=self.is_uphoster,
-                same_dir=self.same_dir,
                 bulk=self.bulk,
                 multi_tag=self.multi_tag,
                 options=self.options,

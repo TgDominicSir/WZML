@@ -1,56 +1,20 @@
 # ruff: noqa: F403, F405
-mirror = """<b>Send link along with command line or </b>
-
-/cmd link
-
-<b>By replying to link/file</b>:
-
-/cmd -n new name -e -up upload destination
-
-<b>NOTE:</b>
-1. Commands that start with <b>qb</b> are ONLY for torrents."""
-
 yt = """<b>Send link along with command line</b>:
 
 /cmd link
 <b>By replying to link</b>:
-/cmd -n new name -z password -opt x:y|x1:y1
+/cmd -n new name -opt x:y|x1:y1
 
 Check here all supported <a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'>SITES</a>
 Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L212'>FILE</a> or use this <a href='https://t.me/mltb_official_channel/177'>script</a> to convert cli arguments to api options."""
 
-clone = """Send Gdrive|Gdot|Filepress|Filebee|Appdrive|Gdflix link along with command or by replying to the link by command."""
-
 new_name = """<b>New Name</b>: -n
 
-/cmd link -n new name
-Note: Doesn't work with torrents"""
+/cmd link -n new name"""
 
 multi_link = """<b>Multi links only by replying to first link/file</b>: -i
 
 /cmd -i 10(number of links/files)"""
-
-same_dir = """<b>Move file(s)/folder(s) to new folder</b>: -m
-
-You can use this arg also to move multiple links/torrents contents to the same directory, so all links will be uploaded together as one task
-
-/cmd link -m new folder (only one link inside new folder)
-/cmd -i 10(number of links/files) -m folder name (all links contents in one folder)
-/cmd -b -m folder name (reply to batch of message/file(each link on new line))
-
-While using bulk you can also use this arg with different folder name along with the links in message or file batch
-Example:
-link1 -m folder1
-link2 -m folder1
-link3 -m folder2
-link4 -m folder2
-link5 -m folder3
-link6
-so link1 and link2 content will be uploaded from same folder which is folder1
-link3 and link4 content will be uploaded from same folder also which is folder2
-link5 will be uploaded alone inside new folder named folder3
-link6 will get uploaded normally alone
-"""
 
 thumb = """<b>Thumbnail for current task</b>: -t
 
@@ -63,14 +27,6 @@ split_size = """<b>Split size for current task</b>: -sp
 Note: Only mb and gb are supported or write in bytes without unit!"""
 
 upload = """<b>Upload Destination</b>: -up
-
-/cmd link -up rcl/gdl (rcl: to select rclone config, remote & path | gdl: To select token.pickle, gdrive id) using buttons
-You can directly add the upload path: -up remote:dir/subdir or -up Gdrive_id or -up id/username (telegram) or -up id/username|topic_id (telegram)
-If DEFAULT_UPLOAD is `rc` then you can pass up: `gd` to upload using gdrive tools to GDRIVE_ID.
-If DEFAULT_UPLOAD is `gd` then you can pass up: `rc` to upload to RCLONE_PATH.
-
-If you want to add path or gdrive manually from your config/token (UPLOADED FROM USETTING) add mrcc: for rclone and mtp: before the path/gdrive_id without space.
-/cmd link -up mrcc:main:dump or -up mtp:gdrive_id <strong>or you can simply edit upload using owner/user token/config from usetting without adding mtp: or mrcc: before the upload path/id</strong>
 
 To add leech destination:
 -up id/@username/pm
@@ -85,66 +41,14 @@ when you should use b:(leech by bot)? When your default settings is leech by use
 -ud id/@username (raw chat id or username works too)
 If the name is not configured, buttons are shown to pick one of the configured dumps.
 The chosen chat becomes the upload destination for that task, overriding LEECH_LOG_CHAT.
-
-In case you want to specify whether using token.pickle or service accounts you can add tp:gdrive_id (using token.pickle) or sa:gdrive_id (using service accounts) or mtp:gdrive_id (using token.pickle uploaded from usetting).
-DEFAULT_UPLOAD doesn't affect on leech cmds.
 """
-
-user_download = """<b>User Download</b>: link
-
-/cmd tp:link to download using owner token.pickle in case service account enabled.
-/cmd sa:link to download using service account in case service account disabled.
-/cmd tp:gdrive_id to download using token.pickle and file_id in case service account enabled.
-/cmd sa:gdrive_id to download using service account and file_id in case service account disabled.
-/cmd mtp:gdrive_id or mtp:link to download using user token.pickle uploaded from usetting
-/cmd mrcc:remote:path to download using user rclone config uploaded from usetting
-you can simply edit upload using owner/user token/config from usetting without adding mtp: or mrcc: before the path/id"""
-
-rcf = """<b>Rclone Flags</b>: -rcf
-
-/cmd link|path|rcl -up path|rcl -rcf --buffer-size:8M|--drive-starred-only|key|key:value
-This will override all other flags except --exclude
-Check here all <a href='https://rclone.org/flags/'>RcloneFlags</a>."""
 
 bulk = """<b>Bulk Download</b>: -b
 
 Bulk can be used only by replying to text message or text file contains links separated by new line.
-Example:
-link1 -n new name -up remote1:path1 -rcf |key:value|key:value
-link2 -z -n new name -up remote2:path2
-link3 -e -n new name -up remote2:path2
-Reply to this example by this cmd -> /cmd -b(bulk)
 
-Note: Any arg along with the cmd will be set to all links
-/cmd -b -up remote: -z -m folder name (all links contents in one zipped folder uploaded to one destination)
-so you can't set different upload destinations along with link in case you have added -m along with cmd
-You can set start and end of the links from the bulk like seed, with -b start:end or only end by -b :end or only start by -b start.
+You can set start and end of the links from the bulk with -b start:end or only end by -b :end or only start by -b start.
 The default start is from zero(first link) to inf."""
-
-rclone_dl = """<b>Rclone Download</b>:
-
-Treat rclone paths exactly like links
-/cmd main:dump/ubuntu.iso or rcl(To select config, remote and path)
-Users can add their own rclone from user settings
-If you want to add path manually from your config add mrcc: before the path without space
-/cmd mrcc:main:dump/ubuntu.iso
-You can simply edit using owner/user config from usetting without adding mrcc: before the path"""
-
-extract_zip = """<b>Extract/Zip</b>: -e -z
-
-/cmd link -e password (extract password protected)
-/cmd link -z password (zip password protected)
-/cmd link -z password -e (extract and zip password protected)
-Note: When both extract and zip added with cmd it will extract first and then zip, so always extract first"""
-
-join = """<b>Join Splitted Files</b>: -j
-
-This option will only work before extract and zip, so mostly it will be used with -m argument (samedir)
-By Reply:
-/cmd -i 3 -j -m folder name
-/cmd -b -j -m folder name
-if u have link(folder) have splitted files:
-/cmd link -j"""
 
 tg_links = """<b>TG Links</b>:
 
@@ -170,17 +74,6 @@ Create screenshots for one video or folder of videos.
 /cmd -ss (it will take the default values which is 10 photos).
 You can control this value. Example: /cmd -ss 6."""
 
-seed = """<b>Bittorrent seed</b>: -d
-
-/cmd link -d ratio:seed_time or by replying to file/link
-To specify ratio and seed time add -d ratio:time.
-Example: -d 0.7:10 (ratio and time) or -d 0.7 (only ratio) or -d :10 (only time) where time in minutes"""
-
-zip_arg = """<b>Zip</b>: -z password
-
-/cmd link -z (zip)
-/cmd link -z password (zip password protected)"""
-
 qual = """<b>Quality Buttons</b>: -s
 
 In case default quality added from yt-dlp options using format option and you need to select quality for specific link or links with multi links feature.
@@ -204,33 +97,11 @@ force_start = """<b>Force Start</b>: -f -fd -fu
 /cmd link -fd (force download only)
 /cmd link -fu (force upload directly after download finish)"""
 
-gdrive = """<b>Gdrive</b>: link
-If DEFAULT_UPLOAD is `rc` then you can pass up: `gd` to upload using gdrive tools to GDRIVE_ID.
-/cmd gdriveLink or gdl or gdriveId -up gdl or gdriveId or gd
-/cmd tp:gdriveLink or tp:gdriveId -up tp:gdriveId or gdl or gd (to use token.pickle if service account enabled)
-/cmd sa:gdriveLink or sa:gdriveId -p sa:gdriveId or gdl or gd (to use service account if service account disabled)
-/cmd mtp:gdriveLink or mtp:gdriveId -up mtp:gdriveId or gdl or gd(if you have added upload gdriveId from usetting) (to use user token.pickle that uploaded by usetting)
-You can simply edit using owner/user token from usetting without adding mtp: before the id"""
-
-rclone_cl = """<b>Rclone</b>: path
-If DEFAULT_UPLOAD is `gd` then you can pass up: `rc` to upload to RCLONE_PATH.
-/cmd rcl/rclone_path -up rcl/rclone_path/rc -rcf flagkey:flagvalue|flagkey|flagkey:flagvalue
-/cmd rcl or rclone_path -up rclone_path or rc or rcl
-/cmd mrcc:rclone_path -up rcl or rc(if you have add rclone path from usetting) (to use user config)
-You can simply edit using owner/user config from usetting without adding mrcc: before the path"""
-
 name_swap = r"""<b>Name Substitution</b>: -ns
-/cmd link -ns script/code/s | mirror/leech | tea/ /s | clone | cpu/ | \[mltb\]/mltb | \\text\\/text/s
+/cmd link -ns script/code/s | tea/ /s | cpu/ | \[mltb\]/mltb | \\text\\/text/s
 This will affect on all files. Format: wordToReplace/wordToReplaceWith/sensitiveCase
 Word Substitutions. You can add pattern instead of normal text. Timeout: 60 sec
 NOTE: You must add \ before any character, those are the characters: \^$.|?*+()[]{}-
-1. script will get replaced by code with sensitive case
-2. mirror will get replaced by leech
-4. tea will get replaced by space with sensitive case
-5. clone will get removed
-6. cpu will get replaced by space
-7. [mltb] will get replaced by mltb
-8. \text\ will get replaced by text with sensitive case
 """
 
 transmission = """<b>Tg transmission</b>: -hl -ut -bt
@@ -257,30 +128,6 @@ Here I will explain how to use mltb.* which is reference to files you want to wo
 3. Third cmd: the input is mltb.m4a so this cmd will work only on m4a audios and the output is mltb.mp3 so the output extension is mp3.
 4. Fourth cmd: the input is mltb.audio so this cmd will work on all audios and the output is mltb.mp3 so the output extension is mp3."""
 
-alldebrid_arg = """<b>AllDebrid Unlock</b>: -ad
-
-/cmd link -ad
-Resolves filehost links (1fichier, rapidgator, mega, etc.) via the
-AllDebrid API before handing off to the existing direct downloader.
-
-Magnet/torrent inputs are also routed through AllDebrid when -ad
-is set: the bot uploads the magnet (or replied <code>.torrent</code>
-file), waits for AllDebrid to finish torrenting, then downloads each
-file directly from AllDebrid CDNs. This bypasses aria2/qBittorrent
-entirely so dead torrents finish faster on a debrid plan.
-
-Requires <code>ALLDEBRID_API_KEY</code> in the bot configuration."""
-
-seedr_arg = """<b>Seedr Cloud</b>: -seedr
-
-/cmd magnet -seedr
-Sends the magnet to your Seedr.cc cloud account, waits for it to
-finish there, then downloads the finished files over plain HTTP.
-Useful when the torrent is slow or blocked on your server.
-
-Only works with magnet links and .torrent URLs.
-Set SEEDR_EMAIL and SEEDR_PASSWORD in /usetting or the bot config."""
-
 metadata = """<b>Metadata</b>: -meta
 
 Apply custom metadata to media files using pipe (|) separator.
@@ -302,7 +149,6 @@ Set different metadata for audio/video/subtitle streams in User Settings > FFmpe
 • <b>Subtitle Metadata:</b> Applied to subtitle streams
 
 <b>Examples:</b>
-<code>/mirror link -meta title=My Movie|artist={audiolang} Version</code>
 <code>/yt link -meta album={basename}|year={year}|genre=Action</code>
 
 <b>Escape Pipes:</b> Use <code>\\|</code> to include literal pipe in values:
@@ -316,11 +162,9 @@ Set different metadata for audio/video/subtitle streams in User Settings > FFmpe
 YT_HELP_DICT = {
     "main": yt,
     "New-Name": f"{new_name}\nNote: Don't add file extension",
-    "Zip": zip_arg,
     "Quality": qual,
     "Options": yt_opt,
     "Multi-Link": multi_link,
-    "Same-Directory": same_dir,
     "Thumb": thumb,
     "Split-Size": split_size,
     "Upload-Destination": upload,
@@ -329,33 +173,6 @@ YT_HELP_DICT = {
     "Screenshot": screenshot,
     "Convert-Media": convert_media,
     "Force-Start": force_start,
-    "Name-Swap": name_swap,
-    "TG-Transmission": transmission,
-    "Thumb-Layout": thumbnail_layout,
-    "Leech-Type": leech_as,
-    "FFmpeg-Cmds": ffmpeg_cmds,
-    "Metadata": metadata,
-}
-
-MIRROR_HELP_DICT = {
-    "main": mirror,
-    "New-Name": new_name,
-    "DL-Auth": "<b>Direct link authorization</b>: -au -ap\n\n/cmd link -au username -ap password",
-    "Headers": "<b>Direct link custom headers</b>: -h\n\n/cmd link -h key: value key1: value1",
-    "Extract/Zip": extract_zip,
-    "Multi-Link": multi_link,
-    "Same-Directory": same_dir,
-    "Thumb": thumb,
-    "Split-Size": split_size,
-    "Upload-Destination": upload,
-    "Bulk": bulk,
-    "Join": join,
-    "Tg-Links": tg_links,
-    "Sample-Video": sample_video,
-    "Screenshot": screenshot,
-    "Convert-Media": convert_media,
-    "Force-Start": force_start,
-    "User-Download": user_download,
     "Name-Swap": name_swap,
     "TG-Transmission": transmission,
     "Thumb-Layout": thumbnail_layout,
@@ -376,7 +193,6 @@ def get_bot_commands():
     from ...core.plugin_manager import get_plugin_manager
 
     static_commands = {
-        "Mirror": "[link/file] Mirror to Upload Destination",
         "Ytdl": "[link] Mirror YouTube, m3u8, Social Media and yt-dlp supported urls",
         "UpHoster": "[link/file] Upload to DDL Servers",
         "Leech": "[link/file] Leech files to Upload to Telegram",
@@ -432,9 +248,7 @@ def get_help_string():
         else:
             cmd_str = f"/{cmd_attr}"
 
-        if key == "Mirror":
-            help_lines.append(f"{cmd_str}: Start mirroring to cloud.")
-        elif key == "Ytdl":
+        if key == "Ytdl":
             help_lines.append(f"{cmd_str}: Mirror yt-dlp supported link.")
         elif key == "UpHoster":
             help_lines.append(f"{cmd_str}: Upload to DDL Servers.")

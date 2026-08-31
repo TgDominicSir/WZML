@@ -108,7 +108,6 @@ class Config:
     TELEGRAM_HASH = ""
     TG_PROXY = None
     THUMBNAIL_LAYOUT = ""
-    TMDB_ACCESS_TOKEN = ""
     AUTO_THUMBNAIL = False
     VERIFY_TIMEOUT = 0
     LOGIN_PASS = ""

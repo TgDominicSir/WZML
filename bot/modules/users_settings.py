@@ -1459,8 +1459,6 @@ async def edit_user_settings(client, query):
             back_to = "general"
         elif data[3] == "GOFILE_AUTO_CREATE_FOLDER":
             back_to = "gofile"
-        elif data[3] == "SEEDR_DELETE_FOLDER":
-            back_to = "seedr"
         else:
             back_to = "leech"
         await update_user_settings(query, stype=back_to)
@@ -1529,10 +1527,6 @@ async def edit_user_settings(client, query):
             await database.update_user_doc(user_id, data[3])
         else:
             update_user_ldata(user_id, data[3], "")
-            if data[3] == "MEGA_EMAIL":
-                update_user_ldata(user_id, "MEGA_PASSWORD", "")
-            elif data[3] == "SEEDR_EMAIL":
-                update_user_ldata(user_id, "SEEDR_PASSWORD", "")
             await database.update_user_data(user_id)
         await get_menu(data[3], message, user_id)
     elif data[2] == "reset":

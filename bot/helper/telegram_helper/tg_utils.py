@@ -10,7 +10,6 @@ from ..ext_utils.links_utils import encode_slink
 from ... import LOGGER, user_data
 from ...core.config_manager import Config
 from ...core.tg_client import TgClient
-from ..ext_utils.shortener_utils import short_url
 from ..ext_utils.status_utils import get_readable_time
 from .button_build import ButtonMaker
 
@@ -121,7 +120,7 @@ async def verify_token(user_id, button=None):
         encrypt_url = encode_slink(f"{token}&&{user_id}")
         button.url_button(
             "Verify Access Token",
-            await short_url(f"https://t.me/{TgClient.BNAME}?start={encrypt_url}"),
+            f"https://t.me/{TgClient.BNAME}?start={encrypt_url}",
         )
         return (
             f"┠ <i>Verify Access Token has been expired,</i> Kindly validate a new access token to start using bot again.\n┃\n┖ <b>Validity :</b> <code>{get_readable_time(Config.VERIFY_TIMEOUT)}</code>",

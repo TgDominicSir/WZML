@@ -26,7 +26,6 @@ from ...core.config_manager import Config
 from ..telegram_helper.button_build import ButtonMaker
 from .db_handler import database
 from .help_messages import (
-    MIRROR_HELP_DICT,
     YT_HELP_DICT,
 )
 from .telegraph_helper import telegraph
@@ -144,7 +143,6 @@ def _build_command_usage(help_dict, command_key):
 
 
 def create_help_buttons():
-    _build_command_usage(MIRROR_HELP_DICT, "mirror")
     _build_command_usage(YT_HELP_DICT, "yt")
 
 
@@ -248,7 +246,6 @@ def arg_parser(items, arg_base):
         "-bt",
         "-yt",
         "-ad",
-        "-seedr",
     }
     if Config.DISABLE_BULK and "-b" in items:
         arg_base["-b"] = False
@@ -350,11 +347,6 @@ def update_user_ldata(id_, key, value):
     user_data[id_][key] = value
 
 
-def fetch_drive_cat(user_id, force=False):
-    user_dict = user_data.get(user_id, {})
-    if (Config.DRIVE_CATEGORY_MODE and user_dict.get("drive_cat_mode", False)) or force:
-        return user_dict.get("DRIVE_CAT", {})
-    return {}
 
 
 async def cmd_exec(cmd, shell=False):

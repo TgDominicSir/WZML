@@ -20,9 +20,6 @@ from ..helper.ext_utils.bot_utils import (
 )
 from ..helper.ext_utils.exceptions import DirectDownloadLinkException
 from ..helper.ext_utils.links_utils import (
-    is_gdrive_id,
-    is_gdrive_link,
-    is_magnet,
     is_telegram_link,
     is_url,
 )
@@ -34,7 +31,6 @@ from ..helper.mirror_leech_utils.download_utils.direct_downloader import (
 from ..helper.mirror_leech_utils.download_utils.direct_link_generator import (
     direct_link_generator,
 )
-from ..helper.mirror_leech_utils.download_utils.gd_download import add_gd_download
 from ..helper.mirror_leech_utils.download_utils.telegram_download import (
     TelegramDownloadHelper,
 )
@@ -102,12 +98,8 @@ class Mirror(TaskListener):
         args = {
             "-doc": False,
             "-med": False,
-            "-d": False,
-            "-j": False,
             "-s": False,
             "-b": False,
-            "-e": False,
-            "-z": False,
             "-sv": False,
             "-ss": False,
             "-f": False,
@@ -116,19 +108,15 @@ class Mirror(TaskListener):
             "-hl": False,
             "-bt": False,
             "-ut": False,
-            "-ad": False,
             "-yt": False,
-            "-seedr": False,
             "-i": 0,
             "-sp": 0,
             "link": "",
             "-n": "",
-            "-m": "",
             "-meta": "",
             "-up": "",
             "-ud": "",
             "-gc": "",
-            "-rcf": "",
             "-au": "",
             "-ap": "",
             "-h": "",
@@ -159,16 +147,11 @@ class Mirror(TaskListener):
             return
 
         self.select = args["-s"]
-        self.seed = args["-d"]
         self.name = args["-n"]
         self.up_dest = args["-up"]
         self.dump_dest = args["-ud"]
         self.category = args["-gc"]
-        self.rc_flags = args["-rcf"]
         self.link = args["link"]
-        self.compress = args["-z"]
-        self.extract = args["-e"]
-        self.join = args["-j"]
         self.thumb = args["-t"]
         self.split_size = args["-sp"]
         self.sample_video = args["-sv"]
@@ -183,7 +166,6 @@ class Mirror(TaskListener):
         self.thumbnail_layout = args["-tl"]
         self.as_doc = args["-doc"]
         self.as_med = args["-med"]
-        self.folder_name = f"/{args['-m']}".rstrip("/") if len(args["-m"]) > 0 else ""
         self.bot_trans = args["-bt"]
         self.user_trans = args["-ut"]
         self.is_yt = args["-yt"]
@@ -241,35 +223,7 @@ class Mirror(TaskListener):
                 bulk_end = dargs[1] or 0
             is_bulk = True
 
-        if not is_bulk:
-            if self.multi > 0:
-                if self.folder_name:
-                    async with task_dict_lock:
-                        if self.folder_name in self.same_dir:
-                            self.same_dir[self.folder_name]["tasks"].add(self.mid)
-                            for fd_name in self.same_dir:
-                                if fd_name != self.folder_name:
-                                    self.same_dir[fd_name]["total"] -= 1
-                        elif self.same_dir:
-                            self.same_dir[self.folder_name] = {
-                                "total": self.multi,
-                                "tasks": {self.mid},
-                            }
-                            for fd_name in self.same_dir:
-                                if fd_name != self.folder_name:
-                                    self.same_dir[fd_name]["total"] -= 1
-                        else:
-                            self.same_dir = {
-                                self.folder_name: {
-                                    "total": self.multi,
-                                    "tasks": {self.mid},
-                                }
-                            }
-                elif self.same_dir:
-                    async with task_dict_lock:
-                        for fd_name in self.same_dir:
-                            self.same_dir[fd_name]["total"] -= 1
-        else:
+        if is_bulk:
             await self.init_bulk(input_list, bulk_start, bulk_end, Mirror)
             return
 
@@ -280,7 +234,7 @@ class Mirror(TaskListener):
 
         await self.get_tag(text)
 
-        path = f"{DOWNLOAD_DIR}{self.mid}{self.folder_name}"
+        path = f"{DOWNLOAD_DIR}{self.mid}"
 
         if not self.link and (reply_to := self.message.reply_to_message):
             if reply_to.text:
@@ -353,13 +307,10 @@ class Mirror(TaskListener):
             or file_ is None
             and not is_url(self.link)
             and not await aiopath.exists(self.link)
-            and not is_gdrive_id(self.link)
-            and not is_gdrive_link(self.link)
         ):
             await send_message(
-                self.message, COMMAND_USAGE["mirror"][0], COMMAND_USAGE["mirror"][1]
+                self.message, "Please provide a valid link or reply to a file."
             )
-            await self.remove_from_same_dir()
             await delete_links(self.message)
             return
 
@@ -378,9 +329,7 @@ class Mirror(TaskListener):
 
         if (
             isinstance(self.link, str)
-            and not is_gdrive_link(self.link)
             and file_ is None
-            and not is_gdrive_id(self.link)
         ):
             if isinstance(self.link, str) and (
                 (content_type := await get_content_type(self.link)) is None
@@ -411,16 +360,8 @@ class Mirror(TaskListener):
             await TelegramDownloadHelper(self).add_download(
                 reply_to, f"{path}/", session
             )
-        elif isinstance(self.link, dict):
-            await add_direct_download(self, path)
-        elif is_gdrive_link(self.link) or is_gdrive_id(self.link):
-            await add_gd_download(self, path)
         else:
             await add_direct_download(self, path)
-
-
-async def mirror(client, message):
-    bot_loop.create_task(Mirror(client, message).new_event())
 
 
 async def leech(client, message):
